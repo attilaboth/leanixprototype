@@ -1,0 +1,23 @@
+{
+    factSheet(id:"<leanixID>") {
+        name
+        displayName
+        id
+        ... on BusinessCapability {
+            relBusinessCapabilityToProcess {
+                totalCount
+                edges {
+                    node {
+                        id
+                        factSheet {
+                            name
+                            displayName
+                            fullName
+                            id
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

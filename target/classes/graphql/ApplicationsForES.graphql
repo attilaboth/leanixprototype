@@ -1,0 +1,41 @@
+{
+    factSheet(id:"<leanixID>") {
+        name
+        displayName
+        id
+        type
+        level
+        ... on Process {
+            relToParent {
+                totalCount
+                edges {
+                    node {
+                        id
+                        factSheet {
+                            name
+                            displayName
+                            id
+                            type
+                            level
+                        }
+                    }
+                }
+            }
+            relProcessToApplication {
+                totalCount
+                edges {
+                    node {
+                        id
+                        factSheet {
+                            name
+                            displayName
+                            id
+                            type
+                            level
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
