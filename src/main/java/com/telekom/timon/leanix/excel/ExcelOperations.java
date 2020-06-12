@@ -1,6 +1,8 @@
 package com.telekom.timon.leanix.excel;
 
 import com.telekom.timon.leanix.datamodel.BusinessActivity;
+import com.telekom.timon.leanix.datamodel.EnablingService;
+import com.telekom.timon.leanix.datamodel.EnablingServiceVariant;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -9,7 +11,9 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ExcelOperations {
 
@@ -55,19 +59,44 @@ public class ExcelOperations {
     }
 
     public void generateDataFromObject(final List<BusinessActivity> businessActivityList) {
+        XSSFSheet business_activitySheet = createASheet("business_activity");
+        generateSheetHeader(business_activitySheet, Arrays.asList("name", "id", "ibi_teilprozess","network","teilbereich","teilprozess"));
 
+        XSSFSheet enabling_serviceSheet = createASheet("enabling_service");
+        generateSheetHeader(enabling_serviceSheet, Arrays.asList("name", "es_id"));
+        Set<EnablingService> enablingServiceTabSet = new HashSet<>();
+
+        XSSFSheet enabling_service_variantSheet = createASheet("enabling_service_variant");
+        generateSheetHeader(enabling_service_variantSheet, Arrays.asList("name", "implementation_id", "user_label", "description"));
+        Set<EnablingServiceVariant> enablingServiceVariantTabSet = new HashSet<>();
+
+        int baRowNum = 0;
         for (BusinessActivity aBusinessActivity: businessActivityList) {
 
+            //business_activity tab
+            generateDataRow(business_activitySheet,aBusinessActivity.getBaAsXlsData(), ++baRowNum);
 
-            XSSFSheet relationshipsSheet = createASheet("business_activity");
-            generateSheetHeader(relationshipsSheet, Arrays.asList("name", "id", "ibi_teilprozess","network","teilbereich","teilprozess"));
-            generateDataRow(relationshipsSheet,aBusinessActivity.getBaAsXlsData(),1);
+            //enabling_service tab
+            for (EnablingService anEnablingService: aBusinessActivity.getEnablingServiceList()) {
+                enablingServiceTabSet.add(anEnablingService);
 
-
+                //enabling_service_variant tab
+                final List<EnablingServiceVariant> enablingServiceVariantList = anEnablingService.getEnablingServiceVariantList();
+                for (EnablingServiceVariant anEnablingServiceVariant:enablingServiceVariantList) {
+                    enablingServiceVariantTabSet.add(anEnablingServiceVariant);
+                }
+            }
         }
 
+        int esRowNum = 0;
+        for (final EnablingService enablingService : enablingServiceTabSet) {
+            generateDataRow(enabling_serviceSheet, enablingService.getESasXlsData(), ++esRowNum);
+        }
 
-
+        int esvRowNum = 0;
+        for (final EnablingServiceVariant enablingServiceVariant : enablingServiceVariantTabSet) {
+            generateDataRow(enabling_service_variantSheet, enablingServiceVariant.getESasXlsData(), ++esvRowNum);
+        }
     }
 
     public void generateFinalXslFile() {

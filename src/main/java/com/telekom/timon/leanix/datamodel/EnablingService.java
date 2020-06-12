@@ -17,7 +17,7 @@ public class EnablingService {
 
 
     public List<EnablingServiceVariant> getEnablingServiceVariantList() {
-        if(null == enablingServiceVariantList){
+        if (null == enablingServiceVariantList) {
             enablingServiceVariantList = new ArrayList<>();
         }
         return enablingServiceVariantList;
@@ -53,5 +53,19 @@ public class EnablingService {
 
     public String getEnablingServiceName() {
         return enablingServiceName;
+    }
+
+    /**
+     * ES-0006 - Kunden beraten & Angebot erstellen
+     * name | es_id
+     * @return
+     */
+    public List<String> getESasXlsData() {
+        List<String> esAsXlsData = new ArrayList<>();
+        String[] idAndName = enablingServiceName.split("-");
+        esAsXlsData.add(idAndName[2]); // name
+        esAsXlsData.add(idAndName[0]+"-"+idAndName[1]); // es_id
+
+        return esAsXlsData;
     }
 }
