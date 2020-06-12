@@ -1,5 +1,5 @@
 {
-    factSheet(id:"<leanixID>") {
+    factSheet(id: "5ba4466a-4195-44e4-82cb-d226ab50d45c") {
         name
         displayName
         fullName
@@ -19,7 +19,7 @@
                     }
                 }
             }
-            relProcessToApplication {
+            relToChild {
                 totalCount
                 edges {
                     node {

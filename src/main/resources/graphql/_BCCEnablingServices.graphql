@@ -1,11 +1,12 @@
 {
-    factSheet(id:"<leanixID>") {
+    factSheet(id: "9bcf26d5-b929-4db1-994e-fe9dbad376f0") {
         name
         displayName
         fullName
         id
-        ... on BusinessCapability {
-            relBusinessCapabilityToProcess {
+        description
+        ... on Process {
+            relToChild {
                 totalCount
                 edges {
                     node {
@@ -15,6 +16,7 @@
                             displayName
                             fullName
                             id
+                            description
                         }
                     }
                 }

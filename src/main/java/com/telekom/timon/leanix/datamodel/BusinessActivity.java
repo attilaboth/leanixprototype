@@ -39,4 +39,27 @@ public class BusinessActivity {
     public String getBusinessActivityName() {
         return businessActivityName;
     }
+
+    /**
+     * name	| id | ibi_teilprozess | network | teilbereich | teilprozess
+     * @return
+     */
+    public List<String> getBaAsXlsData() {
+        List<String> baIntoXlsAsData = new ArrayList<>();
+        final String[] teilProcessAndName = businessActivityName.split(":");
+        final String[] ntt = teilProcessAndName[1].split("-");
+
+        //FIXME: Where do we find this?
+        final String BA_ID = "BA_ID000";
+
+        baIntoXlsAsData.add(teilProcessAndName[1] + " ("+BA_ID+")");//name
+        baIntoXlsAsData.add(BA_ID); // BA-ID ?
+        baIntoXlsAsData.add(teilProcessAndName[0]); // ibi_teilprozess
+        baIntoXlsAsData.add(ntt[1]);//network
+        baIntoXlsAsData.add(ntt[2]); //teilbereich
+        baIntoXlsAsData.add(ntt[0]);//teilprozess
+
+        return baIntoXlsAsData;
+
+    }
 }
