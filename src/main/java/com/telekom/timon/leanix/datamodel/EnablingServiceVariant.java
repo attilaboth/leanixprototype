@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class EnablingServiceVariant {
+public class EnablingServiceVariant implements Comparable<EnablingServiceVariant>{
 
     private String enablingServiceVariantId;
     private String enablingServiceVariantName;
@@ -101,5 +101,10 @@ public class EnablingServiceVariant {
     @Override
     public int hashCode() {
         return Objects.hash(enablingServiceVariantId, enablingServiceVariantName);
+    }
+
+    @Override
+    public int compareTo(final EnablingServiceVariant enablingServiceVariant) {
+        return this.getEnablingServiceVariantName().compareTo(enablingServiceVariant.getEnablingServiceVariantName());
     }
 }

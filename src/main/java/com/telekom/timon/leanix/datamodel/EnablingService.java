@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class EnablingService {
+public class EnablingService implements Comparable<EnablingService>{
 
     private final String enablingServiceId;
     private final String enablingServiceName;
@@ -67,5 +67,10 @@ public class EnablingService {
         esAsXlsData.add(idAndName[0]+"-"+idAndName[1]); // es_id
 
         return esAsXlsData;
+    }
+
+    @Override
+    public int compareTo(final EnablingService enablingService) {
+        return this.getEnablingServiceName().compareTo(enablingService.getEnablingServiceName());
     }
 }

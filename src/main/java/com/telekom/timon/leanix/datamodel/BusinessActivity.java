@@ -50,7 +50,7 @@ public class BusinessActivity {
         final String[] ntt = teilProcessAndName[1].split("-");
 
         //FIXME: Where do we find this?
-        final String BA_ID = "BA_ID000";
+        final String BA_ID = "<BA_ID000>";
 
         baIntoXlsAsData.add(teilProcessAndName[1] + " ("+BA_ID+")");//name
         baIntoXlsAsData.add(BA_ID); // BA-ID ?

@@ -1,8 +1,6 @@
 package com.telekom.timon.leanix.excel;
 
-import com.telekom.timon.leanix.datamodel.BusinessActivity;
-import com.telekom.timon.leanix.datamodel.EnablingService;
-import com.telekom.timon.leanix.datamodel.EnablingServiceVariant;
+import com.telekom.timon.leanix.datamodel.*;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -10,10 +8,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ExcelOperations {
 
@@ -64,11 +59,19 @@ public class ExcelOperations {
 
         XSSFSheet enabling_serviceSheet = createASheet("enabling_service");
         generateSheetHeader(enabling_serviceSheet, Arrays.asList("name", "es_id"));
-        Set<EnablingService> enablingServiceTabSet = new HashSet<>();
+        Set<EnablingService> enablingServiceTabSet = new TreeSet<>();
 
         XSSFSheet enabling_service_variantSheet = createASheet("enabling_service_variant");
         generateSheetHeader(enabling_service_variantSheet, Arrays.asList("name", "implementation_id", "user_label", "description"));
-        Set<EnablingServiceVariant> enablingServiceVariantTabSet = new HashSet<>();
+        Set<EnablingServiceVariant> enablingServiceVariantTabSet = new TreeSet<>();
+
+        XSSFSheet business_applicationSheet = createASheet("business_application");
+        generateSheetHeader(business_applicationSheet, Arrays.asList("name", "DARWIN_NAME"));
+        Set<AppDarwinName> business_applicationSheetTabSet = new TreeSet<>();
+
+        XSSFSheet relationshipsSheet = createASheet("relationships");
+        generateSheetHeader(relationshipsSheet, Arrays.asList("start", "relation_type", "end"));
+        List<RelationshipUCMDB> relationshipsTabList = new ArrayList<>();
 
         int baRowNum = 0;
         for (BusinessActivity aBusinessActivity: businessActivityList) {
@@ -80,10 +83,30 @@ public class ExcelOperations {
             for (EnablingService anEnablingService: aBusinessActivity.getEnablingServiceList()) {
                 enablingServiceTabSet.add(anEnablingService);
 
+                //relationships: business_activity --> enabling_service
+                relationshipsTabList.add(new RelationshipUCMDB(aBusinessActivity.getBusinessActivityName(),
+                        anEnablingService.getEnablingServiceName()));
+
                 //enabling_service_variant tab
                 final List<EnablingServiceVariant> enablingServiceVariantList = anEnablingService.getEnablingServiceVariantList();
                 for (EnablingServiceVariant anEnablingServiceVariant:enablingServiceVariantList) {
                     enablingServiceVariantTabSet.add(anEnablingServiceVariant);
+
+                    //relationships: enabling_service --> enabling_service_variant
+                    relationshipsTabList.add(new RelationshipUCMDB(anEnablingService.getEnablingServiceName(),
+                            anEnablingServiceVariant.getEnablingServiceVariantName()));
+
+
+                    //business_application tab
+                    List<AppDarwinName> appDarwinNameList = anEnablingServiceVariant.getAppDarwinNameList();
+                    for (AppDarwinName appDarwinName:appDarwinNameList) {
+                        business_applicationSheetTabSet.add(appDarwinName);
+
+                        //relationships: enabling_service_variant --> business_application
+                        System.out.println(anEnablingServiceVariant.getEnablingServiceVariantName() +  "--> " + appDarwinName.getDarwinName());
+                        relationshipsTabList.add(new RelationshipUCMDB(anEnablingServiceVariant.getEnablingServiceVariantName(),
+                                appDarwinName.getDarwinName()));
+                    }
                 }
             }
         }
@@ -96,6 +119,18 @@ public class ExcelOperations {
         int esvRowNum = 0;
         for (final EnablingServiceVariant enablingServiceVariant : enablingServiceVariantTabSet) {
             generateDataRow(enabling_service_variantSheet, enablingServiceVariant.getESasXlsData(), ++esvRowNum);
+        }
+
+        int appNameRowNum = 0;
+        for (final AppDarwinName appDarwinName : business_applicationSheetTabSet) {
+            generateDataRow(business_applicationSheet, appDarwinName.getDarwinNameAsXslData(), ++appNameRowNum);
+        }
+
+        int relationsRowNum = 0;
+        Set<RelationshipUCMDB> relationshipUCMDBSet = new HashSet<>();
+        relationshipUCMDBSet.addAll(relationshipsTabList);
+        for (final RelationshipUCMDB aRelationship : relationshipUCMDBSet) {
+            generateDataRow(relationshipsSheet, aRelationship.getUCMDBAsXlsData(), ++relationsRowNum);
         }
     }
 

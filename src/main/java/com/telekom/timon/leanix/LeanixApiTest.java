@@ -28,24 +28,37 @@ public class LeanixApiTest {
     private static final Map<String, BusinessActivity> dataToConvertToXls = new HashMap<>();
 
     public static void main(String[] args) {
+        final List<BusinessActivity> businessActivityList = new ArrayList<>();
+
         String nameFromPDFPVG_TS_0001 = "PVG_TS-0001: Auftragsmanagement - MF - Bereitstellung - Neugeschäft PK";
         String leanixIDFromH2DBPVG_TS_0001 = "1f929fba-8232-485e-b3e0-a99cb6659718";
         BusinessActivity businessActivityPVG_TS_0001 = queryDataAndInstantiateBusinessActivity(nameFromPDFPVG_TS_0001,
                 leanixIDFromH2DBPVG_TS_0001);
+
+        businessActivityList.add(businessActivityPVG_TS_0001);
         printContentToConsole(businessActivityPVG_TS_0001);
+
 
         String nameFromPDFPVG_TS_0002 = "PVG_TS-0002: Auftragsmanagement - MF - Bereitstellung - Bestandsgeschäft PK";
         String leanixIDFromH2DBPVG_TS_0002 = "c8d9a47a-5c55-46c3-b4b5-6ad826f51b03";
         BusinessActivity businessActivityPVG_TS_0002 = queryDataAndInstantiateBusinessActivity(nameFromPDFPVG_TS_0002,
                 leanixIDFromH2DBPVG_TS_0002);
+
+        businessActivityList.add(businessActivityPVG_TS_0002);
         printContentToConsole(businessActivityPVG_TS_0002);
 
-        ///////////////////// ExcelOperations ////////////////////////////
-        final List<BusinessActivity> businessActivityList = new ArrayList<>();
-        businessActivityList.add(businessActivityPVG_TS_0001);
-        businessActivityList.add(businessActivityPVG_TS_0002);
-        ExcelOperations excelWritter = new ExcelOperations("xlsFiles/BCC.xls");
+        /*
+        String nameFromPDFPVG_TS_0003 = "PVG_TS-0005: Auftragsmanagement - FN - Bereitstellung - Produktbereitstellung";
+        String leanixIDFromH2DBPVG_TS_0003 = "fe984adc-bb4b-4449-bdbd-7132be2ed1fc";
+        BusinessActivity businessActivityPVG_TS_0003 = queryDataAndInstantiateBusinessActivity(nameFromPDFPVG_TS_0003,
+                leanixIDFromH2DBPVG_TS_0003);
 
+        businessActivityList.add(businessActivityPVG_TS_0003);
+        printContentToConsole(businessActivityPVG_TS_0003);
+*/
+        ///////////////////// ExcelOperations ////////////////////////////
+
+        ExcelOperations excelWritter = new ExcelOperations("xlsFiles/BCC.xls");
         excelWritter.generateDataFromObject(businessActivityList);
         excelWritter.generateFinalXslFile();
     }
