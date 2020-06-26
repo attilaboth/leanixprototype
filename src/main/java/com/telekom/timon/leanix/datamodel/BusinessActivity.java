@@ -7,11 +7,21 @@ public class BusinessActivity {
 
     private final String businessActivityId;
     private final String businessActivityName;
+    private String businessActivityExternalId;
     private List<EnablingService> enablingServiceList;
 
     public BusinessActivity(final String businessActivityId, final String businessActivityName) {
         this.businessActivityId = businessActivityId;
         this.businessActivityName = businessActivityName;
+    }
+
+    public String getBusinessActivityExternalId() {
+        return businessActivityExternalId;
+    }
+
+    public BusinessActivity setBusinessActivityExternalId(final String businessActivityExternalId) {
+        this.businessActivityExternalId = businessActivityExternalId;
+        return this;
     }
 
     public List<EnablingService>  getEnablingServiceList() {
@@ -20,7 +30,6 @@ public class BusinessActivity {
         }
         return enablingServiceList;
     }
-
 
     @Override
     public String toString() {
@@ -49,11 +58,8 @@ public class BusinessActivity {
         final String[] teilProcessAndName = businessActivityName.split(":");
         final String[] ntt = teilProcessAndName[1].split("-");
 
-        //FIXME: Where do we find this?
-        final String BA_ID = "<BA_ID000>";
-
-        baIntoXlsAsData.add(teilProcessAndName[1] + " ("+BA_ID+")");//name
-        baIntoXlsAsData.add(BA_ID); // BA-ID ?
+        baIntoXlsAsData.add(teilProcessAndName[1] + " ("+businessActivityExternalId+")");//name
+        baIntoXlsAsData.add(businessActivityExternalId); // BA-ID ?
         baIntoXlsAsData.add(teilProcessAndName[0]); // ibi_teilprozess
         baIntoXlsAsData.add(ntt[1]);//network
         baIntoXlsAsData.add(ntt[2]); //teilbereich

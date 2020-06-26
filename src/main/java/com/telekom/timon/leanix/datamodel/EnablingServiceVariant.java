@@ -4,40 +4,35 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class EnablingServiceVariant implements Comparable<EnablingServiceVariant>{
+public class EnablingServiceVariant implements Comparable<EnablingServiceVariant> {
 
-    private String enablingServiceVariantId;
-    private String enablingServiceVariantName;
-    private String esvUserLabel;
+    private String evsId;  //ESV-00206
+    private String esvLeanixId;  //f500296b-85fd-41d5-b352-77a8ae206f83
+    private String enablingServiceVariantName; // ESV-00206 - Kunden beraten & Angebot erstellen (mShop, MF)
+    private String esvUserLabel;  //ESV-00206 - Kunden beraten & Angebot erstellen (mShop, MF)
     private String esvDescription = "esvDescription"; //FIXME: tobe implemented
     private List<AppDarwinName> appDarwinNameList;
 
     public EnablingServiceVariant(final String enablingServiceVariantId, final String enablingServiceVariantName) {
-        this.enablingServiceVariantId = enablingServiceVariantId;
+        this.esvLeanixId = enablingServiceVariantId;
         this.enablingServiceVariantName = enablingServiceVariantName;
     }
 
-
-    public String getEnablingServiceVariantName() {
-        return enablingServiceVariantName;
+    public String getEvsId() {
+        return enablingServiceVariantName.split(" - ")[0];
     }
 
-    public EnablingServiceVariant setEnablingServiceVariantName(final String enablingServiceVariantName) {
-        this.enablingServiceVariantName = enablingServiceVariantName;
-        return this;
-    }
+    public String getEsvLeanixId() {
 
-    public String getEnablingServiceVariantId() {
-        return enablingServiceVariantId;
-    }
-
-    public EnablingServiceVariant setEnablingServiceVariantId(final String enablingServiceVariantId) {
-        this.enablingServiceVariantId = enablingServiceVariantId;
-        return this;
+        return esvLeanixId;
     }
 
     public String getEsvUserLabel() {
         return esvUserLabel;
+    }
+
+    public String getEnablingServiceVariantName() {
+        return enablingServiceVariantName;
     }
 
     public EnablingServiceVariant setEsvUserLabel(final String esvUserLabel) {
@@ -64,7 +59,7 @@ public class EnablingServiceVariant implements Comparable<EnablingServiceVariant
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("\n\t\tEnablingServiceVariant{");
-        sb.append("enablingServiceVariantId='").append(enablingServiceVariantId).append('\'');
+        sb.append("enablingServiceVariantId='").append(esvLeanixId).append('\'');
         sb.append(",enablingServiceVariantName='").append(enablingServiceVariantName).append('\'');
         sb.append("\n\t\tappDarwinNameList=").append(appDarwinNameList);
         sb.append('}');
@@ -74,13 +69,14 @@ public class EnablingServiceVariant implements Comparable<EnablingServiceVariant
     /**
      * Login durchführen (mShop) | ESV-00200 | Login durchführen (mShop) | mShop
      * ESV-00200 - Login durchführen (mShop)
+     *
      * @return
      */
     public List<String> getESasXlsData() {
         List<String> esvAsXlsData = new ArrayList<>();
         String[] idAndName = enablingServiceVariantName.split("-");
         esvAsXlsData.add(idAndName[2]); //name
-        esvAsXlsData.add(idAndName[0]+"-"+idAndName[1]); //implementation_id
+        esvAsXlsData.add(idAndName[0] + "-" + idAndName[1]); //implementation_id
         setEsvUserLabel(idAndName[2]); //FIXME: ? maybe this value is different
         esvAsXlsData.add(getEsvUserLabel()); //user_label
         esvAsXlsData.add(getEsvDescription());  //description
@@ -94,17 +90,19 @@ public class EnablingServiceVariant implements Comparable<EnablingServiceVariant
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final EnablingServiceVariant that = (EnablingServiceVariant) o;
-        return enablingServiceVariantId.equals(that.enablingServiceVariantId) &&
+        return esvLeanixId.equals(that.esvLeanixId) &&
                 enablingServiceVariantName.equals(that.enablingServiceVariantName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enablingServiceVariantId, enablingServiceVariantName);
+        return Objects.hash(esvLeanixId, enablingServiceVariantName);
     }
 
     @Override
     public int compareTo(final EnablingServiceVariant enablingServiceVariant) {
         return this.getEnablingServiceVariantName().compareTo(enablingServiceVariant.getEnablingServiceVariantName());
     }
+
+
 }

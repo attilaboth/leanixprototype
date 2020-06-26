@@ -14,6 +14,7 @@ public class LeanixApiTest {
     private static final String CONTAINMENT = " | --> | ";
 
     static {
+
         testPDFData.put("1f929fba-8232-485e-b3e0-a99cb6659718",
                 "PVG_TS-0001: Auftragsmanagement - MF - Bereitstellung - Neugeschäft PK");
         testPDFData.put("c8d9a47a-5c55-46c3-b4b5-6ad826f51b03",
@@ -28,6 +29,20 @@ public class LeanixApiTest {
     private static final Map<String, BusinessActivity> dataToConvertToXls = new HashMap<>();
 
     public static void main(String[] args) {
+
+        //setting system properties for proxy
+        //-Dhttps.proxyHost=HE202194.emea2.cds.t-internal.com
+        // -Dhttps.proxyPort=3128
+        //FIXME: make it reading from a PROP file, make it nice
+        try {
+            Properties systemSettings = System.getProperties();
+            systemSettings.put("proxySet", "true");
+            systemSettings.put("https.proxyHost", "HE202194.emea2.cds.t-internal.com");
+            systemSettings.put("https.proxyPort", "3128");
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
         final List<BusinessActivity> businessActivityList = new ArrayList<>();
 
         String nameFromPDFPVG_TS_0001 = "PVG_TS-0001: Auftragsmanagement - MF - Bereitstellung - Neugeschäft PK";
@@ -36,7 +51,7 @@ public class LeanixApiTest {
                 leanixIDFromH2DBPVG_TS_0001);
 
         businessActivityList.add(businessActivityPVG_TS_0001);
-        printContentToConsole(businessActivityPVG_TS_0001);
+        //printContentToConsole(businessActivityPVG_TS_0001);
 
 
         String nameFromPDFPVG_TS_0002 = "PVG_TS-0002: Auftragsmanagement - MF - Bereitstellung - Bestandsgeschäft PK";
@@ -45,7 +60,7 @@ public class LeanixApiTest {
                 leanixIDFromH2DBPVG_TS_0002);
 
         businessActivityList.add(businessActivityPVG_TS_0002);
-        printContentToConsole(businessActivityPVG_TS_0002);
+        //printContentToConsole(businessActivityPVG_TS_0002);
 
         /*
         String nameFromPDFPVG_TS_0003 = "PVG_TS-0005: Auftragsmanagement - FN - Bereitstellung - Produktbereitstellung";
@@ -66,9 +81,9 @@ public class LeanixApiTest {
     private static void printContentToConsole(final BusinessActivity businessActivity) {
         System.out.println("business_activity tab: \n" + businessActivity.getBusinessActivityName());
 
-        Set<EnablingService> enablingServiceSet = new HashSet<>(businessActivity.getEnablingServiceList());
-        Set<EnablingServiceVariant> enablingServiceVariantSet = new HashSet<>();
-        Set<AppDarwinName> businessApplicationNamesSet = new HashSet<>();
+        Set<EnablingService> enablingServiceSet = new TreeSet<>(businessActivity.getEnablingServiceList());
+        Set<EnablingServiceVariant> enablingServiceVariantSet = new TreeSet<>();
+        Set<AppDarwinName> businessApplicationNamesSet = new TreeSet<>();
 
         System.out.println("\nenabling_service tab: ");
         enablingServiceSet.forEach(enablingService -> {
@@ -116,13 +131,20 @@ public class LeanixApiTest {
         Map<String, Map<String, Object>> businessCapabilityCatalogueData = graphqlApiLeanix.executeQuery();
         Set<ResultObject> businessCatalogueSet = parseResultDataForSegment(businessCapabilityCatalogueData, "relToChild");
 
-        System.out.print("Constucting data structure for " + nameFromPDF);
-        System.out.println("\t " + leanixIDFromH2DB);
+        System.out.print("Constructing data structure for " + nameFromPDF);
+        //System.out.println("\t " + leanixIDFromH2DB);
 
         BusinessActivity businessActivity = new BusinessActivity(leanixIDFromH2DB, nameFromPDF);
 
+        //FIXME: cache it upoon startup, or use sort to find the BA_ID faster
+        Map<String, List<String>> businessApplIdsMap = new ExcelOperations("xlsFilesToBeParsed/ApplicationNamesWithBA_ids.xlsx")
+                .getSpecificColumnsBySheetName("Worksheet", 3, 5, false);
+
+        businessActivity.setBusinessActivityExternalId(businessApplIdsMap.get(nameFromPDF).get(0));
+
 
         /***********************2nd graphql Query ****************************/
+        //FIXME: cache result of ths call too
         String esvQuery = IOUtil.getFileContentAsString("src/main/resources/graphql/EnablingServiceVariantQuery.graphql");
         String queryWithLeanixID = StringUtils.replaceOnce(esvQuery, "<leanixID>", leanixIDFromH2DB);
         graphqlApiLeanix.setGraphqlQueryString(queryWithLeanixID);
@@ -134,14 +156,19 @@ public class LeanixApiTest {
         enablingServiceVariants.forEach(esv -> {
             esvList.add(new EnablingServiceVariant(esv.getLeanixId(), esv.getName()));
         });
-        System.out.println("There are " + esvList.size() + " ESV-t for " + nameFromPDF);
+        //System.out.println("There are " + esvList.size() + " ESV-s for " + nameFromPDF);
+
+        //FIXME: cache it upoon startup, or use sort to find the BA_ID faster
+        Map<String, List<String>> darwinNamesMap = new ExcelOperations("xlsFilesToBeParsed/DarwinNames_itcoNum_applicationNames.xlsx")
+                .getSpecificColumnsBySheetName("Application Role", 3, 2, true);
+
         for (EnablingServiceVariant anEnablingServiceVariant : esvList) {
 
             /***********************3rd graphql Query****************************/
             String enablingServiceVariant = anEnablingServiceVariant.getEnablingServiceVariantName();
             //System.out.println("finding info for : " + enablingServiceVariant);
             String appForEs = IOUtil.getFileContentAsString("src/main/resources/graphql/ApplicationsForES.graphql");
-            String appForEsLeainxQuery = StringUtils.replaceOnce(appForEs, "<leanixID>", anEnablingServiceVariant.getEnablingServiceVariantId());
+            String appForEsLeainxQuery = StringUtils.replaceOnce(appForEs, "<leanixID>", anEnablingServiceVariant.getEsvLeanixId());
             graphqlApiLeanix.setGraphqlQueryString(appForEsLeainxQuery);
 
             Map<String, Map<String, Object>> applicationsForESV = graphqlApiLeanix.executeQuery();
@@ -153,9 +180,18 @@ public class LeanixApiTest {
                 businessActivity.getEnablingServiceList().add(enablingService);
                 //System.out.println("\tES: " + es.getName());
                 applicationNamesSet.forEach(app -> {
-                    AppDarwinName appDarwinName = new AppDarwinName(app.getDisplayName());
+                    System.out.println("app: " + app.getName() + " ::: " + anEnablingServiceVariant.getEnablingServiceVariantName());
+                    if(app.getName().equalsIgnoreCase("ReO")){
+                        System.out.println("ReO found? ReO\tREO_WIRK (GER004441)\tESV-00209\n");
+                    }
+                    AppDarwinName appDarwinName = new AppDarwinName(app.getName());
+                    List<String> possibleApplNamesList = darwinNamesMap.get(anEnablingServiceVariant.getEvsId());
+
+                    System.out.println("possibleApplNamesList: " + possibleApplNamesList);
+                    appDarwinName.getDarwinNameList().addAll(possibleApplNamesList);
+                    appDarwinName.findMyNameInPossibleNamesList();
+
                     anEnablingServiceVariant.getAppDarwinNameList().add(appDarwinName);
-                    //System.out.println("\t\t" + appDarwinName);
                 });
                 enablingService.getEnablingServiceVariantList().add(anEnablingServiceVariant);
             });
@@ -179,7 +215,7 @@ public class LeanixApiTest {
 
             String name = (String) factSheetMap.get("name");
             String displayName = (String) factSheetMap.get("displayName");
-            String fullName = (String) factSheetMap.get("fullName");
+            String fullName = (String) factSheetMap.get("fullName"); //FIXME: this isn't used anywhere. Do we need this?
             String leanixId = (String) factSheetMap.get("id");
             esvSet.add(new ResultObject(name, displayName, leanixId));
         }

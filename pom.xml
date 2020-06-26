@@ -7,8 +7,8 @@
     <groupId>atboth.leanix.test</groupId>
     <artifactId>leanixprototype</artifactId>
     <version>1.0-SNAPSHOT</version>
-
-    <name>leanix-ucmdb-java-api</name>
+    <packaging>jar</packaging>
+    <name>leanixprototype</name>
     <description>SpringBoot application for leanIX - UCMDB api</description>
 
     <developers>
@@ -52,6 +52,42 @@
             <version>4.1.2</version>
         </dependency>
 
-
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.25</version>
+        </dependency>
     </dependencies>
-</project>
+
+    <!-- create an executable jar file
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>single</goal>
+                            </goals>
+                            <configuration>
+                                <archive>
+                                    <manifest>
+                                        <mainClass>
+                                            ccom.telekom.timon.leanix.LeanixApiTest
+                                        </mainClass>
+                                    </manifest>
+                                </archive>
+                                <descriptorRefs>
+                                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                                </descriptorRefs>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+        -->
+    </project>

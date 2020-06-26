@@ -79,16 +79,14 @@ public class IOUtil {
 		byte[] buffer = new byte[1024];
 		String unzippedFile = aGzippedFile.getPath() + ".csv";
 
-		try (GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(aGzippedFile))) {
-
-			FileOutputStream zpiCSVFileOutStream = new FileOutputStream(unzippedFile);
+		try (GZIPInputStream gzipInputStream = new GZIPInputStream(new FileInputStream(aGzippedFile));
+			 FileOutputStream zpiCSVFileOutStream = new FileOutputStream(unzippedFile)) {
 
 			int len;
 			while ((len = gzipInputStream.read(buffer)) > 0) {
 				zpiCSVFileOutStream.write(buffer, 0, len);
 			}
 
-			zpiCSVFileOutStream.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

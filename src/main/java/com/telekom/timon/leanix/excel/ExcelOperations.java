@@ -1,16 +1,20 @@
 package com.telekom.timon.leanix.excel;
 
 import com.telekom.timon.leanix.datamodel.*;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class ExcelOperations {
+    private static Logger logger = LoggerFactory.getLogger(ExcelOperations.class);
 
     private XSSFWorkbook workbook;
     private String xlsFileName;
@@ -54,6 +58,26 @@ public class ExcelOperations {
     }
 
     public void generateDataFromObject(final List<BusinessActivity> businessActivityList) {
+        //FIXME: remove
+        String MANDANT_NAME = "DTT";
+        String SUBMANDANT_NAME = "DTT";
+        String BUSINESS_FUNCTION_NAME = "mShop";
+
+        //mandant tab
+        XSSFSheet mandantSheet = createASheet("mandant");
+        generateSheetHeader(mandantSheet, Arrays.asList("name"));
+        generateDataRow(mandantSheet,Arrays.asList(MANDANT_NAME), 1);
+
+        //submandant tab
+        XSSFSheet submandantSheet = createASheet("submandant");
+        generateSheetHeader(submandantSheet, Arrays.asList("name"));
+        generateDataRow(submandantSheet,Arrays.asList(SUBMANDANT_NAME), 1);
+
+        //business_function tab
+        XSSFSheet business_functionSheet = createASheet("business_function");
+        generateSheetHeader(business_functionSheet, Arrays.asList("name"));
+        generateDataRow(business_functionSheet,Arrays.asList(BUSINESS_FUNCTION_NAME), 1);
+
         XSSFSheet business_activitySheet = createASheet("business_activity");
         generateSheetHeader(business_activitySheet, Arrays.asList("name", "id", "ibi_teilprozess","network","teilbereich","teilprozess"));
 
@@ -66,7 +90,7 @@ public class ExcelOperations {
         Set<EnablingServiceVariant> enablingServiceVariantTabSet = new TreeSet<>();
 
         XSSFSheet business_applicationSheet = createASheet("business_application");
-        generateSheetHeader(business_applicationSheet, Arrays.asList("name", "DARWIN_NAME"));
+        generateSheetHeader(business_applicationSheet, Arrays.asList("name"));
         Set<AppDarwinName> business_applicationSheetTabSet = new TreeSet<>();
 
         XSSFSheet relationshipsSheet = createASheet("relationships");
@@ -83,7 +107,15 @@ public class ExcelOperations {
             for (EnablingService anEnablingService: aBusinessActivity.getEnablingServiceList()) {
                 enablingServiceTabSet.add(anEnablingService);
 
-                //relationships: business_activity --> enabling_service
+                //relationships:
+                //mandant-->submandant
+                relationshipsTabList.add(new RelationshipUCMDB(MANDANT_NAME,
+                       SUBMANDANT_NAME));
+                //submandant-->relationship
+                relationshipsTabList.add(new RelationshipUCMDB(SUBMANDANT_NAME,
+                        BUSINESS_FUNCTION_NAME));
+
+                // business_activity --> enabling_service
                 relationshipsTabList.add(new RelationshipUCMDB(aBusinessActivity.getBusinessActivityName(),
                         anEnablingService.getEnablingServiceName()));
 
@@ -147,6 +179,203 @@ public class ExcelOperations {
 
     }
 
+    public List<ArrayList<String>> readColumnsFromExcel(String excelName, List<Integer> columnNumbers){
+
+        ClassLoader classLoader = getClass().getClassLoader();
+        File file = new File(classLoader.getResource(excelName).getFile());
+        List<ArrayList<String>> validColumnContents = new ArrayList<>();
+
+        try (InputStream inputStream =new FileInputStream(file);
+             XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
+
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++){
+                XSSFSheet sheet = workbook.getSheetAt(i);
+
+                if (!sheet.getSheetName().equals("ReadMe")) {
+                    Iterator<Row> rowIt = sheet.iterator();
+
+                    while (rowIt.hasNext()) {
+                        Row row = rowIt.next();
+                        Iterator<Cell> cellIterator = row.cellIterator();
+                        ArrayList<String> rowContent = new ArrayList<>();
+
+                        while (cellIterator.hasNext()) {
+                            Cell cell = cellIterator.next();
+
+                            for (int j = 0; j < columnNumbers.size(); j++) {
+
+                                if (cell.getColumnIndex() == columnNumbers.get(j)-1) {
+                                    rowContent.add(cell.getStringCellValue());
+                                }
+                            }
+                        }
+                        validColumnContents.add(rowContent);
+                    }
+                }
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return validColumnContents;
+    }
+
+
+    public Map<String, List<String>> getSpecificColumnsBySheetName(String sheetName, int columnNumberAsKey,
+                                                             int columnNumbersAsValue, boolean isDarwinName) {
+
+        ClassLoader classLoader = getClass().getClassLoader();
+        File file = new File(classLoader.getResource(xlsFileName).getFile());
+        Map<String, List<String>> validColumns = new TreeMap<>();
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+            int sheetNumber = 0;
+
+            if (isValidSheetName(workbook, sheetName)) {
+                sheetNumber = getSheetNumberFromSheetName(workbook, sheetName);
+            } else {
+                logger.error("'" + sheetName + "'" + " is an invalid sheet name!");
+                return validColumns;
+            }
+
+            XSSFSheet sheet = workbook.getSheetAt(sheetNumber);
+            Iterator<Row> rowIt = sheet.iterator();
+
+            while (rowIt.hasNext()) {
+                Row row = rowIt.next();
+
+                if (row.getCell(columnNumberAsKey - 1) != null && row.getCell(columnNumbersAsValue - 1) != null) {
+                    String key = CellType.NUMERIC.equals(row.getCell(columnNumberAsKey - 1).getCellType()) ?
+                            String.valueOf(row.getCell(columnNumberAsKey - 1).getNumericCellValue()) :
+                            row.getCell(columnNumberAsKey - 1).getStringCellValue();
+
+                    String value = CellType.NUMERIC.equals(row.getCell(columnNumbersAsValue - 1).getCellType()) ?
+                            String.valueOf(row.getCell(columnNumbersAsValue - 1).getNumericCellValue()) :
+                            row.getCell(columnNumbersAsValue - 1).getStringCellValue();
+
+                    if (!key.isEmpty() && !value.isEmpty()) {
+                        //FIXME: we need naems like this too
+                        // ReO	REO_WIRK (GER004441)	ESV-00209
+                        //if (!isDarwinName || (isDarwinName && value.contains("(P)"))) {
+
+                            List<String> keyList = new ArrayList<>();
+
+                            if (validColumns.get(key) != null){
+                                keyList = validColumns.get(key);
+                            }
+
+                            keyList.add(value);
+                            validColumns.put(key, keyList);
+                       // }
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InvalidFormatException e) {
+            e.printStackTrace();
+        }
+
+        return validColumns;
+    }
+
+    private boolean isValidSheetName(XSSFWorkbook workbook, String sheetName){
+        boolean matchFound = false;
+
+        for (int i = 0; i < workbook.getNumberOfSheets(); i++){
+            if (sheetName.equals(workbook.getSheetName(i))){
+                matchFound = true;
+            }
+        }
+
+        return matchFound;
+    }
+
+    private int getSheetNumberFromSheetName(XSSFWorkbook workbook, String sheetName) {
+        int sheetNumber = 0;
+
+        for (int i = 0; i < workbook.getNumberOfSheets(); i++){
+            if (sheetName.equals(workbook.getSheetName(i))){
+                sheetNumber = i;
+            }
+        }
+        return sheetNumber;
+    }
+
+    public List<List<ArrayList<String>>> readExcelFile(){
+
+        ClassLoader classLoader = getClass().getClassLoader();
+        File file = new File(classLoader.getResource(xlsFileName).getFile());
+        List<List<ArrayList<String>>> excelContent = new ArrayList<>();
+
+        //FIXME: workbookot megnézni, hogy lehet e osztályváltozót használni
+        try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++){
+                List<ArrayList<String>> sheetContent = new ArrayList<>();
+                XSSFSheet sheet = workbook.getSheetAt(i);
+
+                if (!sheet.getSheetName().equals("ReadMe")) {
+                    Iterator<Row> rowIt = sheet.iterator();
+
+                    while (rowIt.hasNext()) {
+                        Row row = rowIt.next();
+                        Iterator<Cell> cellIterator = row.cellIterator();
+                        ArrayList<String> rowContent = new ArrayList<>();
+
+                        while (cellIterator.hasNext()) {
+                            Cell cell = cellIterator.next();
+
+                            if (cell != null && CellType.NUMERIC.equals(cell.getCellType())){
+                                rowContent.add(String.valueOf(cell.getNumericCellValue()));
+                            } else {
+                                rowContent.add(cell.getStringCellValue());
+                            }
+                        }
+                        sheetContent.add(rowContent);
+                    }
+                }
+
+                if (!sheetContent.isEmpty()){
+                    excelContent.add(sheetContent);
+                }
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException | InvalidFormatException e) {
+            e.printStackTrace();
+        }
+
+        return excelContent;
+    }
+
+    public Map<String, ArrayList<String>> getSpecificColumnsFromExcel(List<List<ArrayList<String>>> excelFile,
+                                                                       int columnNumberAsKey, int sheetNumber,
+                                                                       List<Integer> columnNumbers){
+
+        List<ArrayList<String>> sheetContent = excelFile.get(sheetNumber-1);
+        Map<String, ArrayList<String>> validColumns = new HashMap<>();
+
+        for (ArrayList<String> row : sheetContent){
+            ArrayList<String> validRow = new ArrayList();
+
+            for (int i = 0; i < columnNumbers.size(); i++){
+
+                if ((columnNumbers.get(i)-1) != columnNumberAsKey){
+                    validRow.add(row.get(columnNumbers.get(i)-1));
+                }
+            }
+            validColumns.put(row.get(columnNumberAsKey-1), validRow);
+        }
+
+        return validColumns;
+    }
+
     private void closeResource(final XSSFWorkbook workbook) {
         try {
             workbook.close();
@@ -155,7 +384,5 @@ public class ExcelOperations {
             e.printStackTrace();
         }
     }
-
-
 
 }
