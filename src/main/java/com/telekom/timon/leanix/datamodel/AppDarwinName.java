@@ -47,17 +47,21 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
     public void findMyNameInPossibleNamesList() {
         String appNameNoPostFix = getAppName();
         System.out.println(appNameNoPostFix);
+        String appNameUpperCase = getAppName().toUpperCase();
+        this.darwinName = "<* " + appNameUpperCase + " *>"; //mShop --> MSHOP
 
-        this.darwinName = "<* " + getAppName().toUpperCase() + " *>"; //mShop --> MSHOP
         if(getAppName().contains(" ")){
             appNameNoPostFix = getAppName().split(" ")[0];
         }
+
         for (final String aDarwinName : darwinNameList) {
             //mShop(P) (APPL573735)
+            /*
             if(aDarwinName.trim().isEmpty()){
                 System.out.println("aDarwinName: " + aDarwinName + " .--> skippint iteration.");
                 continue;
             }
+             */
             String aDarwinNameOnly = aDarwinName.trim().split(" ")[0]; //mShop(P) (APPL573735)
             String darwinWithoutP = (aDarwinNameOnly.contains("("))
                     ? aDarwinNameOnly.substring(0, aDarwinNameOnly.indexOf("("))
@@ -66,10 +70,15 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
             if(appNameNoPostFix.equalsIgnoreCase(darwinWithoutP)
                 || darwinWithoutP.toUpperCase().contains(appNameNoPostFix.toUpperCase())){
                 this.darwinName = aDarwinName;
-                System.out.println(getAppName() + " == " + aDarwinName);
                 return;
             }else{
-                //System.out.println(getAppName() + " != " + aDarwinName);
+                //FIXME
+                // use case : SOA BP -- becomes ---> iSMAR(P) (APPL149619)
+                // there is no way to find the name matching in this case
+                if(aDarwinName.equalsIgnoreCase("iSMAR(P) (APPL149619)")){
+                    this.darwinName = aDarwinName;
+                    System.out.println(appNameUpperCase + " -?- " + aDarwinName);
+                }
             }
         }
     }

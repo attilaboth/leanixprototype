@@ -58,7 +58,7 @@ public class ExcelOperations {
     }
 
     public void generateDataFromObject(final List<BusinessActivity> businessActivityList) {
-        //FIXME: remove
+        //FIXME: get from property file or global variable
         String MANDANT_NAME = "DTT";
         String SUBMANDANT_NAME = "DTT";
         String BUSINESS_FUNCTION_NAME = "mShop";
@@ -66,20 +66,20 @@ public class ExcelOperations {
         //mandant tab
         XSSFSheet mandantSheet = createASheet("mandant");
         generateSheetHeader(mandantSheet, Arrays.asList("name"));
-        generateDataRow(mandantSheet,Arrays.asList(MANDANT_NAME), 1);
+        generateDataRow(mandantSheet, Arrays.asList(MANDANT_NAME), 1);
 
         //submandant tab
         XSSFSheet submandantSheet = createASheet("submandant");
         generateSheetHeader(submandantSheet, Arrays.asList("name"));
-        generateDataRow(submandantSheet,Arrays.asList(SUBMANDANT_NAME), 1);
+        generateDataRow(submandantSheet, Arrays.asList(SUBMANDANT_NAME), 1);
 
         //business_function tab
         XSSFSheet business_functionSheet = createASheet("business_function");
         generateSheetHeader(business_functionSheet, Arrays.asList("name"));
-        generateDataRow(business_functionSheet,Arrays.asList(BUSINESS_FUNCTION_NAME), 1);
+        generateDataRow(business_functionSheet, Arrays.asList(BUSINESS_FUNCTION_NAME), 1);
 
         XSSFSheet business_activitySheet = createASheet("business_activity");
-        generateSheetHeader(business_activitySheet, Arrays.asList("name", "id", "ibi_teilprozess","network","teilbereich","teilprozess"));
+        generateSheetHeader(business_activitySheet, Arrays.asList("name", "id", "ibi_teilprozess", "network", "teilbereich", "teilprozess"));
 
         XSSFSheet enabling_serviceSheet = createASheet("enabling_service");
         generateSheetHeader(enabling_serviceSheet, Arrays.asList("name", "es_id"));
@@ -98,19 +98,19 @@ public class ExcelOperations {
         List<RelationshipUCMDB> relationshipsTabList = new ArrayList<>();
 
         int baRowNum = 0;
-        for (BusinessActivity aBusinessActivity: businessActivityList) {
+        for (BusinessActivity aBusinessActivity : businessActivityList) {
 
             //business_activity tab
-            generateDataRow(business_activitySheet,aBusinessActivity.getBaAsXlsData(), ++baRowNum);
+            generateDataRow(business_activitySheet, aBusinessActivity.getBaAsXlsData(), ++baRowNum);
 
             //enabling_service tab
-            for (EnablingService anEnablingService: aBusinessActivity.getEnablingServiceList()) {
+            for (EnablingService anEnablingService : aBusinessActivity.getEnablingServiceList()) {
                 enablingServiceTabSet.add(anEnablingService);
 
                 //relationships:
                 //mandant-->submandant
                 relationshipsTabList.add(new RelationshipUCMDB(MANDANT_NAME,
-                       SUBMANDANT_NAME));
+                        SUBMANDANT_NAME));
                 //submandant-->relationship
                 relationshipsTabList.add(new RelationshipUCMDB(SUBMANDANT_NAME,
                         BUSINESS_FUNCTION_NAME));
@@ -121,7 +121,7 @@ public class ExcelOperations {
 
                 //enabling_service_variant tab
                 final List<EnablingServiceVariant> enablingServiceVariantList = anEnablingService.getEnablingServiceVariantList();
-                for (EnablingServiceVariant anEnablingServiceVariant:enablingServiceVariantList) {
+                for (EnablingServiceVariant anEnablingServiceVariant : enablingServiceVariantList) {
                     enablingServiceVariantTabSet.add(anEnablingServiceVariant);
 
                     //relationships: enabling_service --> enabling_service_variant
@@ -131,11 +131,11 @@ public class ExcelOperations {
 
                     //business_application tab
                     List<AppDarwinName> appDarwinNameList = anEnablingServiceVariant.getAppDarwinNameList();
-                    for (AppDarwinName appDarwinName:appDarwinNameList) {
+                    for (AppDarwinName appDarwinName : appDarwinNameList) {
                         business_applicationSheetTabSet.add(appDarwinName);
 
                         //relationships: enabling_service_variant --> business_application
-                        System.out.println(anEnablingServiceVariant.getEnablingServiceVariantName() +  "--> " + appDarwinName.getDarwinName());
+                        System.out.println(anEnablingServiceVariant.getEnablingServiceVariantName() + "--> " + appDarwinName.getDarwinName());
                         relationshipsTabList.add(new RelationshipUCMDB(anEnablingServiceVariant.getEnablingServiceVariantName(),
                                 appDarwinName.getDarwinName()));
                     }
@@ -179,16 +179,16 @@ public class ExcelOperations {
 
     }
 
-    public List<ArrayList<String>> readColumnsFromExcel(String excelName, List<Integer> columnNumbers){
+    public List<ArrayList<String>> readColumnsFromExcel(String excelName, List<Integer> columnNumbers) {
 
         ClassLoader classLoader = getClass().getClassLoader();
         File file = new File(classLoader.getResource(excelName).getFile());
         List<ArrayList<String>> validColumnContents = new ArrayList<>();
 
-        try (InputStream inputStream =new FileInputStream(file);
+        try (InputStream inputStream = new FileInputStream(file);
              XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
 
-            for (int i = 0; i < workbook.getNumberOfSheets(); i++){
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 XSSFSheet sheet = workbook.getSheetAt(i);
 
                 if (!sheet.getSheetName().equals("ReadMe")) {
@@ -204,7 +204,7 @@ public class ExcelOperations {
 
                             for (int j = 0; j < columnNumbers.size(); j++) {
 
-                                if (cell.getColumnIndex() == columnNumbers.get(j)-1) {
+                                if (cell.getColumnIndex() == columnNumbers.get(j) - 1) {
                                     rowContent.add(cell.getStringCellValue());
                                 }
                             }
@@ -225,7 +225,7 @@ public class ExcelOperations {
 
 
     public Map<String, List<String>> getSpecificColumnsBySheetName(String sheetName, int columnNumberAsKey,
-                                                             int columnNumbersAsValue, boolean isDarwinName) {
+                                                                   int columnNumbersAsValue, boolean isDarwinName) {
 
         ClassLoader classLoader = getClass().getClassLoader();
         File file = new File(classLoader.getResource(xlsFileName).getFile());
@@ -249,29 +249,35 @@ public class ExcelOperations {
 
                 if (row.getCell(columnNumberAsKey - 1) != null && row.getCell(columnNumbersAsValue - 1) != null) {
                     String key = CellType.NUMERIC.equals(row.getCell(columnNumberAsKey - 1).getCellType()) ?
-                            String.valueOf(row.getCell(columnNumberAsKey - 1).getNumericCellValue()) :
-                            row.getCell(columnNumberAsKey - 1).getStringCellValue();
+                            String.valueOf(row.getCell(columnNumberAsKey - 1).getNumericCellValue()).trim() :
+                            row.getCell(columnNumberAsKey - 1).getStringCellValue().trim();
 
                     String value = CellType.NUMERIC.equals(row.getCell(columnNumbersAsValue - 1).getCellType()) ?
-                            String.valueOf(row.getCell(columnNumbersAsValue - 1).getNumericCellValue()) :
-                            row.getCell(columnNumbersAsValue - 1).getStringCellValue();
+                            String.valueOf(row.getCell(columnNumbersAsValue - 1).getNumericCellValue()).trim() :
+                            row.getCell(columnNumbersAsValue - 1).getStringCellValue().trim();
+
+                    //NOTE: this was the problem with adding empty Strings, because they were not empty in fact, they
+                    // had a value as 1 space (" "), so we have to trim() them before evaluating
+                    if(key.isEmpty() || value.isEmpty()){
+                        //System.out.println(key + " ----> " + value);
+                    }
 
                     if (!key.isEmpty() && !value.isEmpty()) {
-                        //FIXME: we need naems like this too
+                        //FIXME: we need names like this too
                         // ReO	REO_WIRK (GER004441)	ESV-00209
                         //if (!isDarwinName || (isDarwinName && value.contains("(P)"))) {
 
-                            List<String> keyList = new ArrayList<>();
+                        List<String> keyList = new ArrayList<>();
 
-                            if (validColumns.get(key) != null){
-                                keyList = validColumns.get(key);
-                            }
+                        if (validColumns.get(key) != null) {
+                            keyList = validColumns.get(key);
+                        }
 
-                            keyList.add(value);
-                            validColumns.put(key, keyList);
-                       // }
+                        keyList.add(value);
+                        validColumns.put(key, keyList);
                     }
                 }
+
             }
 
         } catch (IOException e) {
@@ -283,11 +289,11 @@ public class ExcelOperations {
         return validColumns;
     }
 
-    private boolean isValidSheetName(XSSFWorkbook workbook, String sheetName){
+    private boolean isValidSheetName(XSSFWorkbook workbook, String sheetName) {
         boolean matchFound = false;
 
-        for (int i = 0; i < workbook.getNumberOfSheets(); i++){
-            if (sheetName.equals(workbook.getSheetName(i))){
+        for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+            if (sheetName.equals(workbook.getSheetName(i))) {
                 matchFound = true;
             }
         }
@@ -298,15 +304,15 @@ public class ExcelOperations {
     private int getSheetNumberFromSheetName(XSSFWorkbook workbook, String sheetName) {
         int sheetNumber = 0;
 
-        for (int i = 0; i < workbook.getNumberOfSheets(); i++){
-            if (sheetName.equals(workbook.getSheetName(i))){
+        for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+            if (sheetName.equals(workbook.getSheetName(i))) {
                 sheetNumber = i;
             }
         }
         return sheetNumber;
     }
 
-    public List<List<ArrayList<String>>> readExcelFile(){
+    public List<List<ArrayList<String>>> readExcelFile() {
 
         ClassLoader classLoader = getClass().getClassLoader();
         File file = new File(classLoader.getResource(xlsFileName).getFile());
@@ -315,7 +321,7 @@ public class ExcelOperations {
         //FIXME: workbookot megnézni, hogy lehet e osztályváltozót használni
         try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
 
-            for (int i = 0; i < workbook.getNumberOfSheets(); i++){
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 List<ArrayList<String>> sheetContent = new ArrayList<>();
                 XSSFSheet sheet = workbook.getSheetAt(i);
 
@@ -330,7 +336,7 @@ public class ExcelOperations {
                         while (cellIterator.hasNext()) {
                             Cell cell = cellIterator.next();
 
-                            if (cell != null && CellType.NUMERIC.equals(cell.getCellType())){
+                            if (cell != null && CellType.NUMERIC.equals(cell.getCellType())) {
                                 rowContent.add(String.valueOf(cell.getNumericCellValue()));
                             } else {
                                 rowContent.add(cell.getStringCellValue());
@@ -340,7 +346,7 @@ public class ExcelOperations {
                     }
                 }
 
-                if (!sheetContent.isEmpty()){
+                if (!sheetContent.isEmpty()) {
                     excelContent.add(sheetContent);
                 }
             }
@@ -355,22 +361,22 @@ public class ExcelOperations {
     }
 
     public Map<String, ArrayList<String>> getSpecificColumnsFromExcel(List<List<ArrayList<String>>> excelFile,
-                                                                       int columnNumberAsKey, int sheetNumber,
-                                                                       List<Integer> columnNumbers){
+                                                                      int columnNumberAsKey, int sheetNumber,
+                                                                      List<Integer> columnNumbers) {
 
-        List<ArrayList<String>> sheetContent = excelFile.get(sheetNumber-1);
+        List<ArrayList<String>> sheetContent = excelFile.get(sheetNumber - 1);
         Map<String, ArrayList<String>> validColumns = new HashMap<>();
 
-        for (ArrayList<String> row : sheetContent){
+        for (ArrayList<String> row : sheetContent) {
             ArrayList<String> validRow = new ArrayList();
 
-            for (int i = 0; i < columnNumbers.size(); i++){
+            for (int i = 0; i < columnNumbers.size(); i++) {
 
-                if ((columnNumbers.get(i)-1) != columnNumberAsKey){
-                    validRow.add(row.get(columnNumbers.get(i)-1));
+                if ((columnNumbers.get(i) - 1) != columnNumberAsKey) {
+                    validRow.add(row.get(columnNumbers.get(i) - 1));
                 }
             }
-            validColumns.put(row.get(columnNumberAsKey-1), validRow);
+            validColumns.put(row.get(columnNumberAsKey - 1), validRow);
         }
 
         return validColumns;

@@ -10,7 +10,7 @@ public class EnablingServiceVariant implements Comparable<EnablingServiceVariant
     private String esvLeanixId;  //f500296b-85fd-41d5-b352-77a8ae206f83
     private String enablingServiceVariantName; // ESV-00206 - Kunden beraten & Angebot erstellen (mShop, MF)
     private String esvUserLabel;  //ESV-00206 - Kunden beraten & Angebot erstellen (mShop, MF)
-    private String esvDescription = "esvDescription"; //FIXME: tobe implemented
+    private String esvDescription;
     private List<AppDarwinName> appDarwinNameList;
 
     public EnablingServiceVariant(final String enablingServiceVariantId, final String enablingServiceVariantName) {

@@ -13,4 +13,6 @@ public class ResultObject {
     private String name;
     private String displayName;
     private String leanixId;
+    private String description;
+
 }
