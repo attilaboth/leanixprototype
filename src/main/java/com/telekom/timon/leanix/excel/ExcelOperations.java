@@ -227,11 +227,10 @@ public class ExcelOperations {
     public Map<String, List<String>> getSpecificColumnsBySheetName(String sheetName, int columnNumberAsKey,
                                                                    int columnNumbersAsValue, boolean isDarwinName) {
 
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource(xlsFileName).getFile());
         Map<String, List<String>> validColumns = new TreeMap<>();
 
-        try (XSSFWorkbook workbook = new XSSFWorkbook(file)) {
+        try (XSSFWorkbook workbook = new XSSFWorkbook(getClass().getResourceAsStream(xlsFileName))) {
+
             int sheetNumber = 0;
 
             if (isValidSheetName(workbook, sheetName)) {
@@ -256,9 +255,14 @@ public class ExcelOperations {
                             String.valueOf(row.getCell(columnNumbersAsValue - 1).getNumericCellValue()).trim() :
                             row.getCell(columnNumbersAsValue - 1).getStringCellValue().trim();
 
+                        String capeName = CellType.NUMERIC.equals(row.getCell(columnNumbersAsValue - 2).getCellType()) ?
+                                String.valueOf(row.getCell(columnNumbersAsValue - 2).getNumericCellValue()).trim() :
+                                row.getCell(columnNumbersAsValue - 2).getStringCellValue().trim();
+
+
                     //NOTE: this was the problem with adding empty Strings, because they were not empty in fact, they
                     // had a value as 1 space (" "), so we have to trim() them before evaluating
-                    if(key.isEmpty() || value.isEmpty()){
+                    if (key.isEmpty() || value.isEmpty()) {
                         //System.out.println(key + " ----> " + value);
                     }
 
@@ -273,19 +277,22 @@ public class ExcelOperations {
                             keyList = validColumns.get(key);
                         }
 
-                        keyList.add(value);
+                        if(isDarwinName && !capeName.isEmpty()){
+                            keyList.add(capeName + " | " +value);
+                        }else{
+                            keyList.add(value);
+                        }
                         validColumns.put(key, keyList);
                     }
                 }
 
             }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
 
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (InvalidFormatException e) {
-            e.printStackTrace();
         }
-
         return validColumns;
     }
 

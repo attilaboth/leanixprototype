@@ -6,7 +6,7 @@
 
     <groupId>atboth.leanix.test</groupId>
     <artifactId>leanixprototype</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <packaging>jar</packaging>
     <name>leanixprototype</name>
     <description>SpringBoot application for leanIX - UCMDB api</description>
@@ -60,7 +60,7 @@
         </dependency>
     </dependencies>
 
-    <!-- create an executable jar file
+    <!-- create an executable jar file -->
         <build>
             <plugins>
                 <plugin>
@@ -76,7 +76,7 @@
                                 <archive>
                                     <manifest>
                                         <mainClass>
-                                            ccom.telekom.timon.leanix.LeanixApiTest
+                                            com.telekom.timon.leanix.LeanixApiTest
                                         </mainClass>
                                     </manifest>
                                 </archive>
@@ -89,5 +89,5 @@
                 </plugin>
             </plugins>
         </build>
-        -->
+
     </project>

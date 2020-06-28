@@ -6,6 +6,7 @@ import java.util.List;
 public class AppDarwinName implements Comparable<AppDarwinName>{
 
     private String appName;
+
     private String darwinName;
     private List<String> darwinNameList;
     private String itcoNumber;
@@ -14,14 +15,13 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
         this.appName = appName;
     }
 
+    public AppDarwinName setDarwinName(final String darwinName) {
+        this.darwinName = darwinName;
+        return this;
+    }
 
     public String getAppName() {
         return appName;
-    }
-
-    public AppDarwinName setAppName(final String appName) {
-        this.appName = appName;
-        return this;
     }
 
     public List<String> getDarwinNameList() {
@@ -41,6 +41,32 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
         darwinNameAsXls.add(getDarwinName());
 
         return darwinNameAsXls;
+    }
+
+    public String replaceApplicationNameWithDarwinName() {
+        // (1) direct match search
+        for (final String aDarwinName : darwinNameList) {
+            String anApplName = aDarwinName.substring(0, aDarwinName.indexOf(" | "));
+            String darwinName = aDarwinName.substring(aDarwinName.indexOf(" | ")+3, aDarwinName.length());
+            if(getAppName().equalsIgnoreCase(anApplName)){
+                return darwinName;
+            }
+        }
+
+        // (2) indirect match search
+        String applicationName = getAppName();
+        if(applicationName.contains(" ")){
+            applicationName = getAppName().split(" ")[0];
+        }
+        for (final String aDarwinName : darwinNameList) {
+            String anApplName = aDarwinName.substring(0, aDarwinName.indexOf(" | "));
+            String darwinName = aDarwinName.substring(aDarwinName.indexOf(" | ")+3, aDarwinName.length());
+            if(applicationName.equalsIgnoreCase(anApplName)){
+                return darwinName;
+
+            }
+        }
+        return "<* " + getAppName() + " *>";
     }
 
     //FIXME: make it more elegant, and use less String operations if possible
@@ -97,4 +123,6 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
         sb.append('}');
         return sb.toString();
     }
+
+
 }

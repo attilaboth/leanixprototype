@@ -13,9 +13,9 @@ public class IOUtil {
 
 	public static String getFileContentAsString(String pathtoFile) {
 		StringBuffer contentAsStrBuffer = new StringBuffer();
-		try (Stream<String> fileAsStreaam = Files.lines(Paths.get(pathtoFile))) {
+		try (Stream<String> fileAsStream = Files.lines(Paths.get(pathtoFile))) {
 
-			fileAsStreaam.forEach(aLine -> {
+			fileAsStream.forEach(aLine -> {
 
 				contentAsStrBuffer.append(aLine);
 
@@ -111,4 +111,40 @@ public class IOUtil {
 			System.out.println(filePathWithName + " was created.");
 		}
 	}
+/*
+	public String getFileContentFromResourceStream(final String fileOnResources) {
+		String fileContentAsString = "";
+		try (InputStream resourceAsStream = this.getClass().getResourceAsStream(fileOnResources.trim())) {
+			fileContentAsString = inputStreamToString(resourceAsStream);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return fileContentAsString;
+	}
+
+	private static String inputStreamToString(InputStream inputStream) {
+		return new Scanner(inputStream,
+				"UTF-8").useDelimiter("\\A").next();
+	}
+*/
+
+	public String getFileContentFromResourceStreamBufferedReader(final String fileOnResources) {
+		StringBuffer contentAsStrBuffer = new StringBuffer();
+
+		try (InputStream resourceAsStream = getClass().getResourceAsStream(fileOnResources.trim());
+			 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream))) {
+
+			String strCurrentLine;
+
+			while ((strCurrentLine = bufferedReader.readLine()) != null) {
+					 contentAsStrBuffer.append(strCurrentLine);
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return contentAsStrBuffer.toString();
+	}
+
 }

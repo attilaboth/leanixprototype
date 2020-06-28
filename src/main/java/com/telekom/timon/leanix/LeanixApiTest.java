@@ -11,6 +11,7 @@ import java.util.*;
 public class LeanixApiTest {
 
     //FIXME : remove when in prod
+    private static IOUtil ioUtilInstace = new IOUtil();
     private static final Map<String, String> testPDFData = new HashMap<>();
     private static final String CONTAINMENT = " | --> | ";
     private static final GraphqlApiLeanix graphqlApiLeanix = new GraphqlApiLeanix();
@@ -22,21 +23,21 @@ public class LeanixApiTest {
 
         testPDFData.put("1f929fba-8232-485e-b3e0-a99cb6659718",
                 "PVG_TS-0001: Auftragsmanagement - MF - Bereitstellung - Neugeschäft PK");
-        //testPDFData.put("c8d9a47a-5c55-46c3-b4b5-6ad826f51b03",
-           //     "PVG_TS-0002: Auftragsmanagement - MF - Bereitstellung - Bestandsgeschäft PK");
+        testPDFData.put("c8d9a47a-5c55-46c3-b4b5-6ad826f51b03",
+                "PVG_TS-0002: Auftragsmanagement - MF - Bereitstellung - Bestandsgeschäft PK");
         //testPDFData.put("fe984adc-bb4b-4449-bdbd-7132be2ed1fc",
-          //    "PVG_TS-0005: Auftragsmanagement - FN - Bereitstellung - Produktbereitstellung");
+        //    "PVG_TS-0005: Auftragsmanagement - FN - Bereitstellung - Produktbereitstellung");
         //testPDFData.put("ea8c9aa9-7227-4d20-8cb1-53d4199e0665",
-          //   "PVG_TS-0006: Auftragsmanagement - FN - Bereitstellung - Produktwechsel");
+        //   "PVG_TS-0006: Auftragsmanagement - FN - Bereitstellung - Produktwechsel");
 
         //FIXME: cache it upon startup, or use sort to find the BA_ID faster
-        businessApplIdsMap = new ExcelOperations("xlsFilesToBeParsed/ApplicationNamesWithBA_ids.xlsx")
+        businessApplIdsMap = new ExcelOperations("/xlsFilesToBeParsed/ApplicationNamesWithBA_ids.xlsx")
                 .getSpecificColumnsBySheetName("Worksheet", 3, 5, false);
 
         //FIXME: cache it upon startup, or use sort to find the BA_ID faster
-        darwinNamesMap = new ExcelOperations("xlsFilesToBeParsed/DarwinNames_itcoNum_applicationNames.xlsx")
+        darwinNamesMap = new ExcelOperations("/xlsFilesToBeParsed" +
+                "/DarwinNames_itcoNum_applicationNames.xlsx")
                 .getSpecificColumnsBySheetName("Application Role", 3, 2, true);
-
     }
 
     public static void main(String[] args) {
@@ -50,14 +51,14 @@ public class LeanixApiTest {
         settingProxy();
 
 
-        testPDFData.forEach((leanixid, businessActivityName)->{
-            System.out.println("businessActivityName: "+businessActivityName + " with \n\t" + leanixid);
+        testPDFData.forEach((leanixid, businessActivityName) -> {
+            System.out.println("businessActivityName: " + businessActivityName + " with \n\t" + leanixid);
             businessActivityList.add(getBusinessActivityFromLeanixApi(
                     businessActivityName,
                     leanixid));
         });
 
-        
+
         ///////////////////// ExcelOperations ////////////////////////////
 
         ExcelOperations excelWritter = new ExcelOperations("xlsFiles/BCC.xls");
@@ -132,8 +133,16 @@ public class LeanixApiTest {
     private static BusinessActivity queryDataAndInstantiateBusinessActivity(String nameFromPDF, String leanixIDFromH2DB) {
         /***********************1st graphql Query goes directly to the H2 DB****************************/
 
-        graphqlApiLeanix.setGraphqlQueryString(
-                IOUtil.getFileContentAsString("src/main/resources/graphql/BusinessCapabilityCatalogue.graphql"));
+        String fileContentFromResourceStreamBufferedReader =
+                ioUtilInstace.getFileContentFromResourceStreamBufferedReader(
+                        "/graphql" +
+                                "/BusinessCapabilityCatalogue.graphql");
+        System.out.println(fileContentFromResourceStreamBufferedReader);
+        /*graphqlApiLeanix.setGraphqlQueryString(
+               IOUtil.getFileContentAsString("src/main/resources/graphql/BusinessCapabilityCatalogue.graphql"));
+*/
+        graphqlApiLeanix.setGraphqlQueryString(fileContentFromResourceStreamBufferedReader);
+
         Map<String, Map<String, Object>> businessCapabilityCatalogueData = graphqlApiLeanix.executeQuery();
         Set<ResultObject> businessCatalogueSet = parseResultDataForSegment(businessCapabilityCatalogueData, "relToChild");
 
@@ -187,7 +196,8 @@ public class LeanixApiTest {
                         System.out.println("ESV-00205");
                     }
                     appDarwinName.getDarwinNameList().addAll(possibleApplNamesList);
-                    appDarwinName.findMyNameInPossibleNamesList();
+                    appDarwinName.setDarwinName(appDarwinName.replaceApplicationNameWithDarwinName()); //TODO: make
+                    // it more object oriented
 
                     anEnablingServiceVariant.getAppDarwinNameList().add(appDarwinName);
                 });
@@ -215,7 +225,7 @@ public class LeanixApiTest {
             String displayName = (String) factSheetMap.get("displayName");
             String description = (String) factSheetMap.get("description");
             //FIXME: remove if not used, but description has to be constructed manually
-            if(null != description){
+            if (null != description) {
                 System.out.println("description: " + description);
             }
             // this?
