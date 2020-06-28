@@ -53,6 +53,9 @@ public class EnablingServiceVariant implements Comparable<EnablingServiceVariant
         if (null == appDarwinNameList) {
             appDarwinNameList = new ArrayList<>();
         }
+
+        //NOTE: removing all the Darwin Names that we don't find
+        appDarwinNameList.removeIf(name -> name.getDarwinName().startsWith("<*"));
         return appDarwinNameList;
     }
 

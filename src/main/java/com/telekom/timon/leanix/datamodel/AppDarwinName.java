@@ -70,6 +70,7 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
     }
 
     //FIXME: make it more elegant, and use less String operations if possible
+    //FIXME: delete if not used
     public void findMyNameInPossibleNamesList() {
         String appNameNoPostFix = getAppName();
         System.out.println(appNameNoPostFix);

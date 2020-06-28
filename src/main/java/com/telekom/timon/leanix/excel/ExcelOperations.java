@@ -136,6 +136,7 @@ public class ExcelOperations {
 
                         //relationships: enabling_service_variant --> business_application
                         System.out.println(anEnablingServiceVariant.getEnablingServiceVariantName() + "--> " + appDarwinName.getDarwinName());
+
                         relationshipsTabList.add(new RelationshipUCMDB(anEnablingServiceVariant.getEnablingServiceVariantName(),
                                 appDarwinName.getDarwinName()));
                     }
@@ -255,9 +256,9 @@ public class ExcelOperations {
                             String.valueOf(row.getCell(columnNumbersAsValue - 1).getNumericCellValue()).trim() :
                             row.getCell(columnNumbersAsValue - 1).getStringCellValue().trim();
 
-                        String capeName = CellType.NUMERIC.equals(row.getCell(columnNumbersAsValue - 2).getCellType()) ?
-                                String.valueOf(row.getCell(columnNumbersAsValue - 2).getNumericCellValue()).trim() :
-                                row.getCell(columnNumbersAsValue - 2).getStringCellValue().trim();
+                    String capeName = CellType.NUMERIC.equals(row.getCell(columnNumbersAsValue - 2).getCellType()) ?
+                            String.valueOf(row.getCell(columnNumbersAsValue - 2).getNumericCellValue()).trim() :
+                            row.getCell(columnNumbersAsValue - 2).getStringCellValue().trim();
 
 
                     //NOTE: this was the problem with adding empty Strings, because they were not empty in fact, they
@@ -277,9 +278,9 @@ public class ExcelOperations {
                             keyList = validColumns.get(key);
                         }
 
-                        if(isDarwinName && !capeName.isEmpty()){
-                            keyList.add(capeName + " | " +value);
-                        }else{
+                        if (isDarwinName && !capeName.isEmpty()) {
+                            keyList.add(capeName + " | " + value);
+                        } else {
                             keyList.add(value);
                         }
                         validColumns.put(key, keyList);

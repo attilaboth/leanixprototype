@@ -25,10 +25,10 @@ public class LeanixApiTest {
                 "PVG_TS-0001: Auftragsmanagement - MF - Bereitstellung - Neugeschäft PK");
         testPDFData.put("c8d9a47a-5c55-46c3-b4b5-6ad826f51b03",
                 "PVG_TS-0002: Auftragsmanagement - MF - Bereitstellung - Bestandsgeschäft PK");
-        //testPDFData.put("fe984adc-bb4b-4449-bdbd-7132be2ed1fc",
-        //    "PVG_TS-0005: Auftragsmanagement - FN - Bereitstellung - Produktbereitstellung");
-        //testPDFData.put("ea8c9aa9-7227-4d20-8cb1-53d4199e0665",
-        //   "PVG_TS-0006: Auftragsmanagement - FN - Bereitstellung - Produktwechsel");
+        testPDFData.put("fe984adc-bb4b-4449-bdbd-7132be2ed1fc",
+            "PVG_TS-0005: Auftragsmanagement - FN - Bereitstellung - Produktbereitstellung");
+        testPDFData.put("ea8c9aa9-7227-4d20-8cb1-53d4199e0665",
+           "PVG_TS-0006: Auftragsmanagement - FN - Bereitstellung - Produktwechsel");
 
         //FIXME: cache it upon startup, or use sort to find the BA_ID faster
         businessApplIdsMap = new ExcelOperations("/xlsFilesToBeParsed/ApplicationNamesWithBA_ids.xlsx")
