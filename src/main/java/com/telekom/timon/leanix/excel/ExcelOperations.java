@@ -1,7 +1,7 @@
 package com.telekom.timon.leanix.excel;
 
-import com.telekom.timon.leanix.LeanixApiPrototypeMain;
 import com.telekom.timon.leanix.datamodel.*;
+import com.telekom.timon.leanix.performance.PerformanceTester;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -11,13 +11,19 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.awt.*;
 import java.io.*;
+import java.time.Instant;
 import java.util.List;
 import java.util.*;
 
+import static com.telekom.timon.leanix.leanixapi.LeanixPototypeConstants.GENERATTED_XLSX_FILE_NAME;
+
 public class ExcelOperations {
+    //private static Logger logger = LoggerFactory.getLogger(ExcelOperations.class);
 
     private XSSFWorkbook workbook;
     private String xlsFileName;
+
+    private PerformanceTester performanceWriter = new PerformanceTester();
 
     public ExcelOperations(final String xlsFileName) {
         this.xlsFileName = xlsFileName;
@@ -58,6 +64,8 @@ public class ExcelOperations {
     }
 
     public void generateDataFromObject(final List<BusinessActivity> businessActivityList) {
+        Instant start = Instant.now();
+
         //FIXME: get from property file or global variable
         String MANDANT_NAME = "DTT";
         String SUBMANDANT_NAME = "DTT";
@@ -165,6 +173,8 @@ public class ExcelOperations {
         for (final RelationshipUCMDB aRelationship : relationshipUCMDBSet) {
             generateDataRow(relationshipsSheet, aRelationship.getUCMDBAsXlsData(), ++relationsRowNum);
         }
+
+        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
     }
 
     public void generateFinalXslFile(final boolean openGeneratedFile) {
@@ -179,11 +189,10 @@ public class ExcelOperations {
         } finally {
             closeResource(workbook);
         }
-
     }
 
     public void openGeneratedXlsFile(){
-        File file = new File(LeanixApiPrototypeMain.GENERATTED_FILE_NAME);
+        File file = new File(GENERATTED_XLSX_FILE_NAME);
 
         //first check if Desktop is supported by Platform or not
         if(Desktop.isDesktopSupported()){
@@ -198,15 +207,11 @@ public class ExcelOperations {
             //System.out.println("Desktop is not supported");
             return;
         }
-
-
-
     }
 
     public List<ArrayList<String>> readColumnsFromExcel(String excelName, List<Integer> columnNumbers) {
 
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource(excelName).getFile());
+        File file = new File(getClass().getClassLoader().getResource(excelName).getFile());
         List<ArrayList<String>> validColumnContents = new ArrayList<>();
 
         try (InputStream inputStream = new FileInputStream(file);
@@ -250,7 +255,7 @@ public class ExcelOperations {
 
     public Map<String, List<String>> getSpecificColumnsBySheetName(String sheetName, int columnNumberAsKey,
                                                                    int columnNumbersAsValue, boolean isDarwinName) {
-
+        Instant start = Instant.now();
         Map<String, List<String>> validColumns = new TreeMap<>();
 
         try (XSSFWorkbook workbook = new XSSFWorkbook(getClass().getResourceAsStream(xlsFileName))) {
@@ -260,6 +265,7 @@ public class ExcelOperations {
             if (isValidSheetName(workbook, sheetName)) {
                 sheetNumber = getSheetNumberFromSheetName(workbook, sheetName);
             } else {
+                //logger.error("'" + sheetName + "'" + " is an invalid sheet name!");
                 return validColumns;
             }
 
@@ -281,13 +287,6 @@ public class ExcelOperations {
                     String capeName = CellType.NUMERIC.equals(row.getCell(columnNumbersAsValue - 2).getCellType()) ?
                             String.valueOf(row.getCell(columnNumbersAsValue - 2).getNumericCellValue()).trim() :
                             row.getCell(columnNumbersAsValue - 2).getStringCellValue().trim();
-
-
-                    //NOTE: this was the problem with adding empty Strings, because they were not empty in fact, they
-                    // had a value as 1 space (" "), so we have to trim() them before evaluating
-                    if (key.isEmpty() || value.isEmpty()) {
-                        //System.out.println(key + " ----> " + value);
-                    }
 
                     if (!key.isEmpty() && !value.isEmpty()) {
                         //FIXME: we need names like this too
@@ -316,6 +315,8 @@ public class ExcelOperations {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+
         return validColumns;
     }
 
@@ -344,8 +345,7 @@ public class ExcelOperations {
 
     public List<List<ArrayList<String>>> readExcelFile() {
 
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource(xlsFileName).getFile());
+        File file = new File(getClass().getClassLoader().getResource(xlsFileName).getFile());
         List<List<ArrayList<String>>> excelContent = new ArrayList<>();
 
         //FIXME: workbookot megnézni, hogy lehet e osztályváltozót használni

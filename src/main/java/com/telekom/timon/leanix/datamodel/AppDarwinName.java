@@ -70,47 +70,6 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
         return "<* " + getAppName() + " *>";
     }
 
-    //FIXME: make it more elegant, and use less String operations if possible
-    //FIXME: delete if not used
-    public void findMyNameInPossibleNamesList() {
-        String appNameNoPostFix = getAppName();
-        System.out.println(appNameNoPostFix);
-        String appNameUpperCase = getAppName().toUpperCase();
-        this.darwinName = "<* " + appNameUpperCase + " *>"; //mShop --> MSHOP
-
-        if(getAppName().contains(" ")){
-            appNameNoPostFix = getAppName().split(" ")[0];
-        }
-
-        for (final String aDarwinName : darwinNameList) {
-            //mShop(P) (APPL573735)
-            /*
-            if(aDarwinName.trim().isEmpty()){
-                System.out.println("aDarwinName: " + aDarwinName + " .--> skippint iteration.");
-                continue;
-            }
-             */
-            String aDarwinNameOnly = aDarwinName.trim().split(" ")[0]; //mShop(P) (APPL573735)
-            String darwinWithoutP = (aDarwinNameOnly.contains("("))
-                    ? aDarwinNameOnly.substring(0, aDarwinNameOnly.indexOf("("))
-                    : aDarwinNameOnly;
-
-            if(appNameNoPostFix.equalsIgnoreCase(darwinWithoutP)
-                || darwinWithoutP.toUpperCase().contains(appNameNoPostFix.toUpperCase())){
-                this.darwinName = aDarwinName;
-                return;
-            }else{
-                //FIXME
-                // use case : SOA BP -- becomes ---> iSMAR(P) (APPL149619)
-                // there is no way to find the name matching in this case
-                if(aDarwinName.equalsIgnoreCase("iSMAR(P) (APPL149619)")){
-                    this.darwinName = aDarwinName;
-                    System.out.println(appNameUpperCase + " -?- " + aDarwinName);
-                }
-            }
-        }
-    }
-
     @Override
     public int compareTo(final AppDarwinName appDarwinName) {
         return this.getAppName().compareTo(appDarwinName.getAppName());

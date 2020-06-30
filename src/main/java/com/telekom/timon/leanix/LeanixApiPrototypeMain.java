@@ -3,27 +3,26 @@ package com.telekom.timon.leanix;
 import com.telekom.timon.leanix.datamodel.*;
 import com.telekom.timon.leanix.excel.ExcelOperations;
 import com.telekom.timon.leanix.leanixapi.GraphqlApiLeanix;
-import com.telekom.timon.leanix.util.IOUtil;
+import com.telekom.timon.leanix.performance.PerformanceTester;
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.Instant;
 import java.util.*;
 
 import static com.telekom.timon.leanix.leanixapi.LeanixPototypeConstants.*;
+import static com.telekom.timon.leanix.util.IOUtil.getFileContentFromResourceStreamBufferedReader;
 
 public class LeanixApiPrototypeMain {
 
-    //FIXME : remove when in prod
-    //private static final String GENERATTED_FILE_NAME = "xlsFiles//bcc_generated.xlsx";
-    public static final String GENERATTED_FILE_NAME = "c://DEV//bcc_generated.xlsx";
+    private static final PerformanceTester performanceWriter = new PerformanceTester();
     private static boolean openGeneratedFile = false;
-    private static final String CONTAINMENT = " | --> | ";
 
-    private static IOUtil ioUtilInstace = new IOUtil();
     private static final Map<String, String> testPDFData = new HashMap<>();
+    private static final String CONTAINMENT = " | --> | ";
     private static final GraphqlApiLeanix graphqlApiLeanix = new GraphqlApiLeanix();
-    private static Map<String, List<String>> businessApplIdsMap; // FIXME: don't use static--- GC problem
-    private static Map<String, List<String>> darwinNamesMap; //FIXME: don't use static--- GC problem
-    private static final Map<String, BusinessActivity> dataToConvertToXls = new HashMap<>();
+    private static final Map<String, List<String>> businessApplIdsMap; // FIXME: don't use static--- GC problem
+    private static final Map<String, List<String>> darwinNamesMap; //FIXME: don't use static--- GC problem
+    private static Map<String, Map<String, Object>> businessCapabilityCatalogueData = new HashMap<>();
 
     static {
 
@@ -44,31 +43,38 @@ public class LeanixApiPrototypeMain {
         //FIXME: cache it upon startup, or use sort to find the BA_ID faster
         darwinNamesMap = new ExcelOperations(DARWIN_NAMES_MAPPING_TABLE_XLSX)
                 .getSpecificColumnsBySheetName("Application Role", 3, 2, true);
+
     }
 
     public static void main(String[] args) {
-
+        Instant start = Instant.now();
         final List<BusinessActivity> businessActivityList = new ArrayList<>();
 
-        //FIXME: make it reading from a PROP file, make it nice
         settingProxy();
+
+
+        //cache BusinessCapabilityCatalogue
+        graphqlApiLeanix.setGraphqlQueryString(getFileContentFromResourceStreamBufferedReader(BUSINESS_CAPABILITY_CATALOGUE_GRAPHQL));
+        businessCapabilityCatalogueData = graphqlApiLeanix.executeQuery();
+        Set<ResultObject> businessCatalogueSet = parseResultDataForSegment(businessCapabilityCatalogueData, "relToChild");
 
         gatherUserInput();
 
         testPDFData.forEach((leanixid, businessActivityName) -> {
-            System.out.println("\nbusinessActivityName: " + businessActivityName + " with \n\t" + leanixid);
+            System.out.println("businessActivityName: " + businessActivityName + " with \n\t" + leanixid);
             businessActivityList.add(getBusinessActivityFromLeanixApi(
                     businessActivityName,
                     leanixid));
         });
 
+
         ///////////////////// ExcelOperations ////////////////////////////
 
-        ExcelOperations excelWritter = new ExcelOperations(GENERATTED_FILE_NAME);
+        ExcelOperations excelWritter = new ExcelOperations(GENERATTED_XLSX_FILE_NAME);
         excelWritter.generateDataFromObject(businessActivityList);
         excelWritter.generateFinalXslFile(openGeneratedFile);
-
-
+        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+        performanceWriter.closePerformanceWriter();
     }
 
     private static void gatherUserInput() {
@@ -84,8 +90,13 @@ public class LeanixApiPrototypeMain {
     //FIXME: USe Optional
     private static BusinessActivity getBusinessActivityFromLeanixApi(final String businessActivityNameFromPDF,
                                                                      final String leanixIdFromH2DB) {
-        return queryDataAndInstantiateBusinessActivity(businessActivityNameFromPDF,
+        Instant start = Instant.now();
+
+        BusinessActivity businessActivity = queryDataAndInstantiateBusinessActivity(businessActivityNameFromPDF,
                 leanixIdFromH2DB);
+
+        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+        return businessActivity;
     }
 
     private static void settingProxy() {
@@ -146,28 +157,16 @@ public class LeanixApiPrototypeMain {
 
     //FIXME: refactor this is too long of a method
     private static BusinessActivity queryDataAndInstantiateBusinessActivity(String nameFromPDF, String leanixIDFromH2DB) {
-        /***********************1st graphql Query goes directly to the H2 DB****************************/
-
-        String fileContentFromResourceStreamBufferedReader =
-                ioUtilInstace.getFileContentFromResourceStreamBufferedReader(
-                        BUSINESS_CAPABILITY_CATALOGUE_GRAPHQL);
-        /*graphqlApiLeanix.setGraphqlQueryString(
-               IOUtil.getFileContentAsString("src/main/resources/graphql/BusinessCapabilityCatalogue.graphql"));
-*/
-        graphqlApiLeanix.setGraphqlQueryString(fileContentFromResourceStreamBufferedReader);
-
-        Map<String, Map<String, Object>> businessCapabilityCatalogueData = graphqlApiLeanix.executeQuery();
-        Set<ResultObject> businessCatalogueSet = parseResultDataForSegment(businessCapabilityCatalogueData, "relToChild");
+        Instant start = Instant.now();
 
         System.out.print("Constructing data structure for " + nameFromPDF);
+        //System.out.println("\t " + leanixIDFromH2DB);
 
         BusinessActivity businessActivity = new BusinessActivity(leanixIDFromH2DB, nameFromPDF);
         businessActivity.setBusinessActivityExternalId(businessApplIdsMap.get(nameFromPDF).get(0));
 
-
         /***********************2nd graphql Query ****************************/
-        //FIXME: cache result of ths call too
-        String esvQuery = ioUtilInstace.getFileContentFromResourceStreamBufferedReader(
+        String esvQuery = getFileContentFromResourceStreamBufferedReader(
                 ENABLING_SERVICE_VARIANT_GRAPHQL);
         String queryWithLeanixID = StringUtils.replaceOnce(esvQuery, "<leanixID>", leanixIDFromH2DB);
         graphqlApiLeanix.setGraphqlQueryString(queryWithLeanixID);
@@ -179,14 +178,12 @@ public class LeanixApiPrototypeMain {
         enablingServiceVariants.forEach(esv -> {
             esvList.add(new EnablingServiceVariant(esv.getLeanixId(), esv.getName()));
         });
-        //System.out.println("There are " + esvList.size() + " ESV-s for " + nameFromPDF);
 
         for (EnablingServiceVariant anEnablingServiceVariant : esvList) {
 
             /***********************3rd graphql Query****************************/
             String enablingServiceVariant = anEnablingServiceVariant.getEnablingServiceVariantName();
-
-            String appForEs = ioUtilInstace.getFileContentFromResourceStreamBufferedReader(
+            String appForEs = getFileContentFromResourceStreamBufferedReader(
                     APPLICATION_OF_ENABLING_SERVICE_GRAPHQL);
 
             String appForEsLeainxQuery = StringUtils.replaceOnce(appForEs, "<leanixID>", anEnablingServiceVariant.getEsvLeanixId());
@@ -205,9 +202,8 @@ public class LeanixApiPrototypeMain {
                     // .getEnablingServiceVariantName());
                     AppDarwinName appDarwinName = new AppDarwinName(app.getName());
                     List<String> possibleApplNamesList = darwinNamesMap.get(anEnablingServiceVariant.getEvsId());
-
                     appDarwinName.getDarwinNameList().addAll(possibleApplNamesList);
-                    appDarwinName.setDarwinName(appDarwinName.replaceApplicationNameWithDarwinName()); //TODO: make
+                    appDarwinName.setDarwinName(appDarwinName.replaceApplicationNameWithDarwinName());
 
                     anEnablingServiceVariant.getAppDarwinNameList().add(appDarwinName);
                 });
@@ -216,11 +212,17 @@ public class LeanixApiPrototypeMain {
             System.out.println();
 
         }
+        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+
         return businessActivity;
     }
 
+
+
+
     private static Set<ResultObject> parseResultDataForSegment(final Map<String, Map<String, Object>> enablingServiceVariantQueryData,
                                                                String nameOfSegment) {
+        //Instant start = Instant.now();
         Set<ResultObject> esvSet = new HashSet<>();
 
         Map<String, Object> factSheet = enablingServiceVariantQueryData.get("factSheet");
@@ -242,6 +244,8 @@ public class LeanixApiPrototypeMain {
             String leanixId = (String) factSheetMap.get("id");
             esvSet.add(new ResultObject(name, displayName, leanixId, description));
         }
+        //performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+
         return esvSet;
     }
 
