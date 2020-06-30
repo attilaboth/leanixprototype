@@ -1,5 +1,6 @@
 package com.telekom.timon.leanix.excel;
 
+import com.telekom.timon.leanix.LeanixApiPrototypeMain;
 import com.telekom.timon.leanix.datamodel.*;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -7,14 +8,13 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.io.*;
+import java.util.List;
 import java.util.*;
 
 public class ExcelOperations {
-    private static Logger logger = LoggerFactory.getLogger(ExcelOperations.class);
 
     private XSSFWorkbook workbook;
     private String xlsFileName;
@@ -167,16 +167,39 @@ public class ExcelOperations {
         }
     }
 
-    public void generateFinalXslFile() {
+    public void generateFinalXslFile(final boolean openGeneratedFile) {
         try (FileOutputStream outputStream = new FileOutputStream(xlsFileName)) {
             workbook.write(outputStream);
-
+            if(openGeneratedFile){
+                openGeneratedXlsFile();
+            }
         } catch (IOException exception) {
             //FIXME: logger
             exception.printStackTrace();
         } finally {
             closeResource(workbook);
         }
+
+    }
+
+    public void openGeneratedXlsFile(){
+        File file = new File(LeanixApiPrototypeMain.GENERATTED_FILE_NAME);
+
+        //first check if Desktop is supported by Platform or not
+        if(Desktop.isDesktopSupported()){
+            if(file.exists()) {
+                try {
+                    Desktop.getDesktop().open(file);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }else{
+            //System.out.println("Desktop is not supported");
+            return;
+        }
+
+
 
     }
 
@@ -237,7 +260,6 @@ public class ExcelOperations {
             if (isValidSheetName(workbook, sheetName)) {
                 sheetNumber = getSheetNumberFromSheetName(workbook, sheetName);
             } else {
-                logger.error("'" + sheetName + "'" + " is an invalid sheet name!");
                 return validColumns;
             }
 

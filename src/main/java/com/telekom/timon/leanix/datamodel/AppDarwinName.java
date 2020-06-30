@@ -32,7 +32,8 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
     }
 
     public String getDarwinName() {
-        return darwinName;
+        //IT Universe stores all in uppercase
+        return darwinName.toUpperCase();
     }
 
     public List<String> getDarwinNameAsXslData() {

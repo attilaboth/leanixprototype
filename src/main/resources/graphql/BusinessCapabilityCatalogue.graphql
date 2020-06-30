@@ -1,5 +1,5 @@
 {
-    factSheet(id: "17c08fff-94d9-4fdb-b12b-081f41e588db") {
+    factSheet(id:"17c08fff-94d9-4fdb-b12b-081f41e588db") {
         name
         displayName
         fullName

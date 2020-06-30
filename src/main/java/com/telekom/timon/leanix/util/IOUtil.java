@@ -144,6 +144,7 @@ public class IOUtil {
 			e.printStackTrace();
 		}
 
+		System.out.println(fileOnResources + " : \n" +contentAsStrBuffer.toString());
 		return contentAsStrBuffer.toString();
 	}
 
