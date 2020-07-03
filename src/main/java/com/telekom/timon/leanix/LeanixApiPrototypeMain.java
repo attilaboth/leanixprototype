@@ -15,7 +15,7 @@ import static com.telekom.timon.leanix.util.IOUtil.getFileContentFromResourceStr
 public class LeanixApiPrototypeMain {
 
     private static final PerformanceTester performanceWriter = new PerformanceTester();
-    private static boolean openGeneratedFile = false;
+    private static boolean openGeneratedFile = true;
 
     private static final Map<String, String> testPDFData = new HashMap<>();
     private static final String CONTAINMENT = " | --> | ";
@@ -25,12 +25,12 @@ public class LeanixApiPrototypeMain {
     private static Map<String, Map<String, Object>> businessCapabilityCatalogueData = new HashMap<>();
 
     static {
-
+/*
         testPDFData.put("1f929fba-8232-485e-b3e0-a99cb6659718",
                 "PVG_TS-0001: Auftragsmanagement - MF - Bereitstellung - Neugeschäft PK");
         testPDFData.put("c8d9a47a-5c55-46c3-b4b5-6ad826f51b03",
                 "PVG_TS-0002: Auftragsmanagement - MF - Bereitstellung - Bestandsgeschäft PK");
-        /*
+
         testPDFData.put("fe984adc-bb4b-4449-bdbd-7132be2ed1fc",
             "PVG_TS-0005: Auftragsmanagement - FN - Bereitstellung - Produktbereitstellung");
         testPDFData.put("ea8c9aa9-7227-4d20-8cb1-53d4199e0665",
@@ -49,22 +49,34 @@ public class LeanixApiPrototypeMain {
     public static void main(String[] args) {
         Instant start = Instant.now();
         final List<BusinessActivity> businessActivityList = new ArrayList<>();
+        List<String> businessActivityNameList = Arrays.asList(
+                "PVG_TS-0001: Auftragsmanagement - MF - Bereitstellung - Neugeschäft PK",
+                "PVG_TS-0002: Auftragsmanagement - MF - Bereitstellung - Bestandsgeschäft PK");
 
         settingProxy();
-
 
         //cache BusinessCapabilityCatalogue
         graphqlApiLeanix.setGraphqlQueryString(getFileContentFromResourceStreamBufferedReader(BUSINESS_CAPABILITY_CATALOGUE_GRAPHQL));
         businessCapabilityCatalogueData = graphqlApiLeanix.executeQuery();
         Set<ResultObject> businessCatalogueSet = parseResultDataForSegment(businessCapabilityCatalogueData, "relToChild");
 
-        gatherUserInput();
+        //gatherUserInput();
 
-        testPDFData.forEach((leanixid, businessActivityName) -> {
-            System.out.println("businessActivityName: " + businessActivityName + " with \n\t" + leanixid);
-            businessActivityList.add(getBusinessActivityFromLeanixApi(
-                    businessActivityName,
-                    leanixid));
+        businessActivityNameList.forEach((businessActivityName) -> {
+            //FIXME: use Stream Api to find leainx id in businessCatalogueSet
+            ResultObject foundBusinessCatalogueItem = businessCatalogueSet
+                    .stream()
+                    .filter(resultObject ->
+                            resultObject.getName().equalsIgnoreCase(businessActivityName))
+                    .findAny()
+                    .orElse(null);
+
+            System.out.println("businessActivityName: " + foundBusinessCatalogueItem.getName() + " with \n\t" + foundBusinessCatalogueItem.getLeanixId());
+            if (null != foundBusinessCatalogueItem) {
+                businessActivityList.add(getBusinessActivityFromLeanixApi(
+                        foundBusinessCatalogueItem.getName(),
+                        foundBusinessCatalogueItem.getLeanixId()));
+            }
         });
 
 
@@ -73,7 +85,8 @@ public class LeanixApiPrototypeMain {
         ExcelOperations excelWritter = new ExcelOperations(GENERATTED_XLSX_FILE_NAME);
         excelWritter.generateDataFromObject(businessActivityList);
         excelWritter.generateFinalXslFile(openGeneratedFile);
-        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+        performanceWriter.executePerformanceTest(start, new Object() {
+        }.getClass().getEnclosingMethod().getName());
         performanceWriter.closePerformanceWriter();
     }
 
@@ -95,7 +108,8 @@ public class LeanixApiPrototypeMain {
         BusinessActivity businessActivity = queryDataAndInstantiateBusinessActivity(businessActivityNameFromPDF,
                 leanixIdFromH2DB);
 
-        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+        performanceWriter.executePerformanceTest(start, new Object() {
+        }.getClass().getEnclosingMethod().getName());
         return businessActivity;
     }
 
@@ -175,13 +189,67 @@ public class LeanixApiPrototypeMain {
         Set<ResultObject> enablingServiceVariants = parseResultDataForSegment(enablingServiceVariantQueryData, "relBusinessCapabilityToProcess");
         List<EnablingServiceVariant> esvList = new ArrayList<>();
 
+        /*
         enablingServiceVariants.forEach(esv -> {
             esvList.add(new EnablingServiceVariant(esv.getLeanixId(), esv.getName()));
         });
+        */
+        enablingServiceVariants.stream().forEach( esv -> {
+            esvList.add(new EnablingServiceVariant(esv.getLeanixId(), esv.getName()));
+        });
 
+        esvList.stream().forEach( anEnablingServiceVariant -> {
+            /***********************3rd graphql Query****************************/
+            String enablingServiceVariant = anEnablingServiceVariant.getEnablingServiceVariantName();
+            String appForEs = getFileContentFromResourceStreamBufferedReader(
+                    APPLICATION_OF_ENABLING_SERVICE_GRAPHQL);
+
+            String appForEsLeainxQuery = StringUtils.replaceOnce(appForEs, "<leanixID>", anEnablingServiceVariant.getEsvLeanixId());
+            graphqlApiLeanix.setGraphqlQueryString(appForEsLeainxQuery);
+
+            Map<String, Map<String, Object>> applicationsForESV = graphqlApiLeanix.executeQuery();
+            Set<ResultObject> applicationNamesSet = parseResultDataForSegment(applicationsForESV, "relProcessToApplication");
+            Set<ResultObject> enablingServicesSet = parseResultDataForSegment(applicationsForESV, "relToParent");
+
+            enablingServicesSet.stream().forEach(es->{
+                EnablingService enablingService = new EnablingService(es.getLeanixId(), es.getName());
+                businessActivity.getEnablingServiceList().add(enablingService);
+                //System.out.println("\tES: " + es.getName());
+                applicationNamesSet.forEach(app -> {
+                    //System.out.println("app: " + app.getName() + " ::: " + anEnablingServiceVariant
+                    // .getEnablingServiceVariantName());
+                    AppDarwinName appDarwinName = new AppDarwinName(app.getName());
+                    List<String> possibleApplNamesList = darwinNamesMap.get(anEnablingServiceVariant.getEvsId());
+                    appDarwinName.getDarwinNameList().addAll(possibleApplNamesList);
+                    appDarwinName.setDarwinName(appDarwinName.replaceApplicationNameWithDarwinName());
+
+                    anEnablingServiceVariant.getAppDarwinNameList().add(appDarwinName);
+                });
+                enablingService.getEnablingServiceVariantList().add(anEnablingServiceVariant);
+            });
+            /*
+                enablingServicesSet.forEach(es -> {
+                    EnablingService enablingService = new EnablingService(es.getLeanixId(), es.getName());
+                    businessActivity.getEnablingServiceList().add(enablingService);
+                    //System.out.println("\tES: " + es.getName());
+                    applicationNamesSet.forEach(app -> {
+                        //System.out.println("app: " + app.getName() + " ::: " + anEnablingServiceVariant
+                        // .getEnablingServiceVariantName());
+                        AppDarwinName appDarwinName = new AppDarwinName(app.getName());
+                        List<String> possibleApplNamesList = darwinNamesMap.get(anEnablingServiceVariant.getEvsId());
+                        appDarwinName.getDarwinNameList().addAll(possibleApplNamesList);
+                        appDarwinName.setDarwinName(appDarwinName.replaceApplicationNameWithDarwinName());
+
+                        anEnablingServiceVariant.getAppDarwinNameList().add(appDarwinName);
+                    });
+                    enablingService.getEnablingServiceVariantList().add(anEnablingServiceVariant);
+                });
+            });
+            */
+        });
+        /*
         for (EnablingServiceVariant anEnablingServiceVariant : esvList) {
 
-            /***********************3rd graphql Query****************************/
             String enablingServiceVariant = anEnablingServiceVariant.getEnablingServiceVariantName();
             String appForEs = getFileContentFromResourceStreamBufferedReader(
                     APPLICATION_OF_ENABLING_SERVICE_GRAPHQL);
@@ -212,23 +280,24 @@ public class LeanixApiPrototypeMain {
             System.out.println();
 
         }
-        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+        */
+        performanceWriter.executePerformanceTest(start, new Object() {
+        }.getClass().getEnclosingMethod().getName());
 
         return businessActivity;
     }
 
 
-
-
     private static Set<ResultObject> parseResultDataForSegment(final Map<String, Map<String, Object>> enablingServiceVariantQueryData,
                                                                String nameOfSegment) {
-        //Instant start = Instant.now();
+        Instant start = Instant.now();
         Set<ResultObject> esvSet = new HashSet<>();
 
         Map<String, Object> factSheet = enablingServiceVariantQueryData.get("factSheet");
         Map<String, Object> relBusinessCapabilityToProcess = (Map<String, Object>) factSheet.get(nameOfSegment);
         List<Object> edgesList = (List<Object>) relBusinessCapabilityToProcess.get("edges");
-        for (final Object edge : edgesList) {
+
+        edgesList.parallelStream().forEach( edge ->{
             Map<String, Object> edgesMap = (Map<String, Object>) edge;
             Map<String, Object> nodeMap = (Map<String, Object>) edgesMap.get("node");
             Map<String, Object> factSheetMap = (Map<String, Object>) nodeMap.get("factSheet");
@@ -236,16 +305,12 @@ public class LeanixApiPrototypeMain {
             String name = (String) factSheetMap.get("name");
             String displayName = (String) factSheetMap.get("displayName");
             String description = (String) factSheetMap.get("description");
-            //FIXME: remove if not used, but description has to be constructed manually
-            if (null != description) {
-                System.out.println("description: " + description);
-            }
-            // this?
             String leanixId = (String) factSheetMap.get("id");
-            esvSet.add(new ResultObject(name, displayName, leanixId, description));
-        }
-        //performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
 
+            esvSet.add(new ResultObject(name, displayName, leanixId, description));
+        });
+
+        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
         return esvSet;
     }
 
