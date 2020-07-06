@@ -6,7 +6,6 @@ import java.util.List;
 public class AppDarwinName implements Comparable<AppDarwinName>{
 
     private String appName;
-
     private String darwinName;
     private List<String> darwinNameList;
     private String itcoNumber;
@@ -53,7 +52,6 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
                 return darwinName;
             }
         }
-
         // (2) indirect match search
         String applicationName = getAppName();
         if(applicationName.contains(" ")){

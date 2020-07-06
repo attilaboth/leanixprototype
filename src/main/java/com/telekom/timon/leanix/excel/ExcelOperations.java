@@ -15,10 +15,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.*;
 
-import static com.telekom.timon.leanix.leanixapi.LeanixPototypeConstants.GENERATTED_XLSX_FILE_NAME;
+import static com.telekom.timon.leanix.leanixapi.LeanixPototypeConstants.*;
 
 public class ExcelOperations {
-    //private static Logger logger = LoggerFactory.getLogger(ExcelOperations.class);
 
     private XSSFWorkbook workbook;
     private String xlsFileName;
@@ -72,37 +71,41 @@ public class ExcelOperations {
         String BUSINESS_FUNCTION_NAME = "mShop";
 
         //mandant tab
-        XSSFSheet mandantSheet = createASheet("mandant");
-        generateSheetHeader(mandantSheet, Arrays.asList("name"));
+        XSSFSheet mandantSheet = createASheet(XLSX_SHEET_NAME_MANDANT);
+        generateSheetHeader(mandantSheet, Arrays.asList(XLSX_SHEET_COLUMN_NAME_NAME));
         generateDataRow(mandantSheet, Arrays.asList(MANDANT_NAME), 1);
 
         //submandant tab
-        XSSFSheet submandantSheet = createASheet("submandant");
-        generateSheetHeader(submandantSheet, Arrays.asList("name"));
+        XSSFSheet submandantSheet = createASheet(XLSX_SHEET_NAME_SUBMANDANT);
+        generateSheetHeader(submandantSheet, Arrays.asList(XLSX_SHEET_COLUMN_NAME_NAME));
         generateDataRow(submandantSheet, Arrays.asList(SUBMANDANT_NAME), 1);
 
         //business_function tab
-        XSSFSheet business_functionSheet = createASheet("business_function");
-        generateSheetHeader(business_functionSheet, Arrays.asList("name"));
-        generateDataRow(business_functionSheet, Arrays.asList(BUSINESS_FUNCTION_NAME), 1);
+        XSSFSheet businessFunctionSheet = createASheet(XLSX_SHEET_NAME_BUSINESS_FUNCTION);
+        generateSheetHeader(businessFunctionSheet, Arrays.asList(XLSX_SHEET_COLUMN_NAME_NAME));
+        generateDataRow(businessFunctionSheet, Arrays.asList(BUSINESS_FUNCTION_NAME), 1);
 
-        XSSFSheet business_activitySheet = createASheet("business_activity");
-        generateSheetHeader(business_activitySheet, Arrays.asList("name", "id", "ibi_teilprozess", "network", "teilbereich", "teilprozess"));
+        XSSFSheet business_activitySheet = createASheet(XLSX_SHEET_NAME_BUSINESS_ACTIVITY);
+        generateSheetHeader(business_activitySheet, Arrays.asList(XLSX_SHEET_COLUMN_NAME_NAME, XLSX_SHEET_COLUMN_NAME_ID,
+                XLSX_SHEET_COLUMN_NAME_IBI_TEILPROZESS, XLSX_SHEET_COLUMN_NAME_NETWORK, XLSX_SHEET_COLUMN_NAME_TEILBEREICH,
+                XLSX_SHEET_COLUMN_NAME_TEILPROZESS));
 
-        XSSFSheet enabling_serviceSheet = createASheet("enabling_service");
-        generateSheetHeader(enabling_serviceSheet, Arrays.asList("name", "es_id"));
+        XSSFSheet enabling_serviceSheet = createASheet(XLSX_SHEET_NAME_ENABLING_SERVICE);
+        generateSheetHeader(enabling_serviceSheet, Arrays.asList(XLSX_SHEET_COLUMN_NAME_NAME, XLSX_SHEET_COLUMN_NAME_ES_ID));
         Set<EnablingService> enablingServiceTabSet = new TreeSet<>();
 
-        XSSFSheet enabling_service_variantSheet = createASheet("enabling_service_variant");
-        generateSheetHeader(enabling_service_variantSheet, Arrays.asList("name", "implementation_id", "user_label", "description"));
+        XSSFSheet enabling_service_variantSheet = createASheet(XLSX_SHEET_NAME_ENABLING_SERVICE_VARIANT);
+        generateSheetHeader(enabling_service_variantSheet, Arrays.asList(XLSX_SHEET_COLUMN_NAME_NAME,
+                XLSX_SHEET_COLUMN_NAME_IMPLEMENTATION_ID, XLSX_SHEET_COLUMN_NAME_USER_LABEL, XLSX_SHEET_COLUMN_NAME_DESCRIPTION));
         Set<EnablingServiceVariant> enablingServiceVariantTabSet = new TreeSet<>();
 
-        XSSFSheet business_applicationSheet = createASheet("business_application");
-        generateSheetHeader(business_applicationSheet, Arrays.asList("name"));
+        XSSFSheet business_applicationSheet = createASheet(XLSX_SHEET_NAME_BUSINESS_APPLICATION);
+        generateSheetHeader(business_applicationSheet, Arrays.asList(XLSX_SHEET_COLUMN_NAME_NAME));
         Set<AppDarwinName> business_applicationSheetTabSet = new TreeSet<>();
 
-        XSSFSheet relationshipsSheet = createASheet("relationships");
-        generateSheetHeader(relationshipsSheet, Arrays.asList("start", "relation_type", "end"));
+        XSSFSheet relationshipsSheet = createASheet(XLSX_SHEET_NAME_RELATIONSHIPS);
+        generateSheetHeader(relationshipsSheet, Arrays.asList(XLSX_SHEET_COLUMN_NAME_START, XLSX_SHEET_COLUMN_NAME_RELATION_TYPE,
+                XLSX_SHEET_COLUMN_NAME_END));
         List<RelationshipUCMDB> relationshipsTabList = new ArrayList<>();
 
         int baRowNum = 0;
@@ -119,9 +122,12 @@ public class ExcelOperations {
                 //mandant-->submandant
                 relationshipsTabList.add(new RelationshipUCMDB(MANDANT_NAME,
                         SUBMANDANT_NAME));
-                //submandant-->relationship
+                //submandant-->business function
                 relationshipsTabList.add(new RelationshipUCMDB(SUBMANDANT_NAME,
                         BUSINESS_FUNCTION_NAME));
+
+                //business function --> business_activity
+                //FIXME:
 
                 // business_activity --> enabling_service
                 relationshipsTabList.add(new RelationshipUCMDB(aBusinessActivity.getBusinessActivityName(),
@@ -265,7 +271,6 @@ public class ExcelOperations {
             if (isValidSheetName(workbook, sheetName)) {
                 sheetNumber = getSheetNumberFromSheetName(workbook, sheetName);
             } else {
-                //logger.error("'" + sheetName + "'" + " is an invalid sheet name!");
                 return validColumns;
             }
 
@@ -276,23 +281,12 @@ public class ExcelOperations {
                 Row row = rowIt.next();
 
                 if (row.getCell(columnNumberAsKey - 1) != null && row.getCell(columnNumbersAsValue - 1) != null) {
-                    String key = CellType.NUMERIC.equals(row.getCell(columnNumberAsKey - 1).getCellType()) ?
-                            String.valueOf(row.getCell(columnNumberAsKey - 1).getNumericCellValue()).trim() :
-                            row.getCell(columnNumberAsKey - 1).getStringCellValue().trim();
 
-                    String value = CellType.NUMERIC.equals(row.getCell(columnNumbersAsValue - 1).getCellType()) ?
-                            String.valueOf(row.getCell(columnNumbersAsValue - 1).getNumericCellValue()).trim() :
-                            row.getCell(columnNumbersAsValue - 1).getStringCellValue().trim();
-
-                    String capeName = CellType.NUMERIC.equals(row.getCell(columnNumbersAsValue - 2).getCellType()) ?
-                            String.valueOf(row.getCell(columnNumbersAsValue - 2).getNumericCellValue()).trim() :
-                            row.getCell(columnNumbersAsValue - 2).getStringCellValue().trim();
+                    String key = getSpecificCellValue(row, columnNumberAsKey, 0);
+                    String value = getSpecificCellValue(row, columnNumbersAsValue, 0);
+                    String capeName = getSpecificCellValue(row, columnNumbersAsValue, 1);
 
                     if (!key.isEmpty() && !value.isEmpty()) {
-                        //FIXME: we need names like this too
-                        // ReO	REO_WIRK (GER004441)	ESV-00209
-                        //if (!isDarwinName || (isDarwinName && value.contains("(P)"))) {
-
                         List<String> keyList = new ArrayList<>();
 
                         if (validColumns.get(key) != null) {
@@ -318,6 +312,12 @@ public class ExcelOperations {
         performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
 
         return validColumns;
+    }
+
+    private String getSpecificCellValue(Row row, int columnNumber, int columnDistanceFromTheSpecificColumn) {
+        return CellType.NUMERIC.equals(row.getCell(columnNumber - 1 - columnDistanceFromTheSpecificColumn).getCellType()) ?
+                String.valueOf(row.getCell(columnNumber - 1 - columnDistanceFromTheSpecificColumn).getNumericCellValue()).trim() :
+                row.getCell(columnNumber - 1 - columnDistanceFromTheSpecificColumn).getStringCellValue().trim();
     }
 
     private boolean isValidSheetName(XSSFWorkbook workbook, String sheetName) {
