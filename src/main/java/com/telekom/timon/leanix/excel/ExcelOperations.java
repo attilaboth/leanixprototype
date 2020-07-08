@@ -19,10 +19,10 @@ import static com.telekom.timon.leanix.leanixapi.LeanixPototypeConstants.*;
 
 public class ExcelOperations {
 
-    private XSSFWorkbook workbook;
-    private String xlsFileName;
+    private final XSSFWorkbook workbook;
+    private final String xlsFileName;
 
-    private PerformanceTester performanceWriter = new PerformanceTester();
+    private final PerformanceTester performanceWriter = new PerformanceTester();
 
     public ExcelOperations(final String xlsFileName) {
         this.xlsFileName = xlsFileName;
@@ -127,7 +127,7 @@ public class ExcelOperations {
                         BUSINESS_FUNCTION_NAME));
 
                 //business function --> business_activity
-                //FIXME:
+                relationshipsTabList.add(new RelationshipUCMDB(BUSINESS_FUNCTION_NAME, aBusinessActivity.getBusinessActivityName()));
 
                 // business_activity --> enabling_service
                 relationshipsTabList.add(new RelationshipUCMDB(aBusinessActivity.getBusinessActivityName(),
@@ -395,7 +395,7 @@ public class ExcelOperations {
                                                                       List<Integer> columnNumbers) {
 
         List<ArrayList<String>> sheetContent = excelFile.get(sheetNumber - 1);
-        Map<String, ArrayList<String>> validColumns = new HashMap<>();
+        Map<String, ArrayList<String>> validColumns = new TreeMap<>();
 
         for (ArrayList<String> row : sheetContent) {
             ArrayList<String> validRow = new ArrayList();

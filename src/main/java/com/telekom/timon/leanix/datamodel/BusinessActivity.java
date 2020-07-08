@@ -16,7 +16,7 @@ public class BusinessActivity {
     }
 
     public String getBusinessActivityExternalId() {
-        return businessActivityExternalId;
+        return businessActivityExternalId.trim();
     }
 
     public BusinessActivity setBusinessActivityExternalId(final String businessActivityExternalId) {
@@ -46,7 +46,7 @@ public class BusinessActivity {
     }
 
     public String getBusinessActivityName() {
-        return businessActivityName;
+        return businessActivityName.trim();
     }
 
     /**
@@ -58,12 +58,22 @@ public class BusinessActivity {
         final String[] teilProcessAndName = businessActivityName.split(":");
         final String[] ntt = teilProcessAndName[1].split("-");
 
-        baIntoXlsAsData.add(teilProcessAndName[1] + " ("+businessActivityExternalId+")");//name
+        //baIntoXlsAsData.add(teilProcessAndName[1] + " ("+businessActivityExternalId+")");//name
+        baIntoXlsAsData.add(teilProcessAndName[1]);//nam
         baIntoXlsAsData.add(businessActivityExternalId); // BA-ID ?
         baIntoXlsAsData.add(teilProcessAndName[0]); // ibi_teilprozess
-        baIntoXlsAsData.add(ntt[1]);//network
-        baIntoXlsAsData.add(ntt[2]); //teilbereich
-        baIntoXlsAsData.add(ntt[0]);//teilprozess
+
+        //FIXME: How to handle not mathicng struture?
+        // Auftragsmanagement - FN - Bereitstellung / Änderung / Kündigung / Umzug - Lösungsgeschäft (Bereitstellung/ Änderung/ Kündigung) (BA-0081)
+        // Zentrale Infrastruktur - Single Sign On (E-SSO) - Anmeldung (BA-0160)
+        if(ntt.length >= 3){
+            baIntoXlsAsData.add(ntt[1]);//network
+            baIntoXlsAsData.add(ntt[2]); //teilbereich
+            baIntoXlsAsData.add(ntt[0]);//teilprozess
+        }else{
+            baIntoXlsAsData.add(ntt[1]);//network
+            baIntoXlsAsData.add(ntt[0]);//teilprozess
+        }
 
         return baIntoXlsAsData;
 
