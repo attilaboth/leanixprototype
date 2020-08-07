@@ -1,0 +1,26 @@
+{
+  "nodes": [
+    {
+      "type": "business_application",
+      "queryIdentifier": "business_application_with_applid",
+      "visible": true,
+      "includeSubtypes": false,
+      "layout": [
+        "name",
+        "data_externalid"
+      ],
+      "attributeConditions": [
+        {
+          "attribute": "data_externalid",
+          "operator": "like",
+          "value": "APPL%"
+        },
+        {
+          "attribute": "name",
+          "operator": "likeCaseInsensitive",
+          "value": "APPLICATION_NAME%"
+        }
+      ]
+    }
+  ]
+}

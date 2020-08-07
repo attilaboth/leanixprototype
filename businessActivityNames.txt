@@ -1,0 +1,4 @@
+PVG_TS-0001: Auftragsmanagement - MF - Bereitstellung - Neugeschäft PK
+PVG_TS-0002: Auftragsmanagement - MF - Bereitstellung - Bestandsgeschäft PK
+PVG_TS-0005: Auftragsmanagement - FN - Bereitstellung - Produktbereitstellung
+PVG_TS-0006: Auftragsmanagement - FN - Bereitstellung - Produktwechsel

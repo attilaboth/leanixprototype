@@ -1,5 +1,6 @@
 package com.telekom.timon.leanix.leanixapi;
 
+import com.telekom.timon.leanix.util.PropertiesUtil;
 import net.leanix.api.GraphqlApi;
 import net.leanix.api.common.ApiClient;
 import net.leanix.api.common.ApiClientBuilder;
@@ -9,21 +10,22 @@ import net.leanix.api.models.GraphQLResult;
 
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class GraphqlApiLeanix {
 
-    private static final String API_TOKEN = "JYRprc7rfJWYwJxOdzGCTuQTHqVGPL4ge22aAMqu";
-    private static final String BASEPATH = "https://telekom.leanix.net/services/pathfinder/v1";
-    private static final String TOKEN_PROVIDER = "app.leanix.net";
-
+    public static AtomicInteger leanixApicall= new AtomicInteger();
     private final ApiClient apiClient;
     public GraphQLRequest graphQLRequest;
 
     public GraphqlApiLeanix() {
+        Properties apiSettings = new PropertiesUtil().getProperties("graphqlApiSettings.properties");
+
         this.apiClient = new ApiClientBuilder()
-                .withBasePath(BASEPATH)
-                .withApiToken(API_TOKEN)
-                .withTokenProviderHost(TOKEN_PROVIDER)
+                .withBasePath(apiSettings.getProperty("basePath"))
+                .withApiToken(apiSettings.getProperty("apiToken"))
+                .withTokenProviderHost(apiSettings.getProperty("tokenProvider"))
                 .withDebugging(Boolean.FALSE)
                 .build();
     }
@@ -53,6 +55,7 @@ public class GraphqlApiLeanix {
         } catch (ApiException apiException) {
             apiException.printStackTrace();
         }
+        leanixApicall.incrementAndGet();
         return data;
     }
 }

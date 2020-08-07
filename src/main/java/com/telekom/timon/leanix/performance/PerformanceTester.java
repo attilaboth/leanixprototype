@@ -11,15 +11,16 @@ public class PerformanceTester {
 
     private FileWriter writer = null;
 
-    {
+    public PerformanceTester() {
         try {
-            if (writer == null){
+            if (writer == null) {
                 writer = new FileWriter(GENERATTED_PERFORMANCE_RESULT, false);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
     public void writePerformanceDataIntoFile(String methodName, long duration) {
         try {

@@ -7,8 +7,8 @@ import java.util.Objects;
 public class EnablingServiceVariant implements Comparable<EnablingServiceVariant> {
 
     private String evsId;  //ESV-00206
-    private String esvLeanixId;  //f500296b-85fd-41d5-b352-77a8ae206f83
-    private String enablingServiceVariantName; // ESV-00206 - Kunden beraten & Angebot erstellen (mShop, MF)
+    private final String esvLeanixId;  //f500296b-85fd-41d5-b352-77a8ae206f83
+    private final String enablingServiceVariantName; // ESV-00206 - Kunden beraten & Angebot erstellen (mShop, MF)
     private String esvUserLabel;  //ESV-00206 - Kunden beraten & Angebot erstellen (mShop, MF)
     private String esvDescription;
     private List<AppDarwinName> appDarwinNameList;
@@ -53,7 +53,6 @@ public class EnablingServiceVariant implements Comparable<EnablingServiceVariant
         if (null == appDarwinNameList) {
             appDarwinNameList = new ArrayList<>();
         }
-
         //NOTE: removing all the Darwin Names that we don't find
         appDarwinNameList.removeIf(name -> name.getDarwinName().startsWith("<*"));
         return appDarwinNameList;

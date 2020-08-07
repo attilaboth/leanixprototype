@@ -1,12 +1,16 @@
 package com.telekom.timon.leanix;
 
+import com.google.gson.Gson;
 import com.telekom.timon.leanix.datamodel.*;
 import com.telekom.timon.leanix.excel.ExcelOperations;
 import com.telekom.timon.leanix.leanixapi.GraphqlApiLeanix;
-import com.telekom.timon.leanix.performance.PerformanceTester;
+import com.telekom.timon.leanix.restapi.RestApiModel;
+import com.telekom.timon.leanix.ucmdbdata.UcmdbDataContainer;
 import com.telekom.timon.leanix.util.IOUtil;
 import com.telekom.timon.leanix.util.PropertiesUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.*;
@@ -15,6 +19,7 @@ import java.util.stream.Collectors;
 import static com.telekom.timon.leanix.leanixapi.LeanixPototypeConstants.*;
 
 public class LeanixApiPrototypeMain {
+    private static final Logger logger = LogManager.getLogger(LeanixApiPrototypeMain.class);
 
     private static final Map<String, String> testPDFData = new HashMap<>();
     private static final String CONTAINMENT = " | --> | ";
@@ -22,80 +27,108 @@ public class LeanixApiPrototypeMain {
     private static final Map<String, BusinessActivity> dataToConvertToXls = new HashMap<>();
     //FIXME : remove when in prod
     private static final IOUtil ioUtilInstace = new IOUtil();
-    private static final PerformanceTester performanceWriter = new PerformanceTester();
+    //private static final PerformanceTester performanceWriter = new PerformanceTester();
     private static final PropertiesUtil props = new PropertiesUtil();
-    private static final Map<String, List<String>> businessApplIdsMap; // FIXME: don't use static--- GC problem
-    private static final Map<String, List<String>> darwinNamesMap; //FIXME: don't use static--- GC problem
+    private static final Map<String, Set<String>> businessApplIdsMap; // FIXME: don't use static--- GC problem
+    private static final Map<String, Set<String>> darwinNamesMap; //FIXME: don't use static--- GC problem
     private static final Map<String, String> appNameAndBaIsSingularMap; //FIXME: don't use static--- GC problem
-
+    private static String postRequestForAuthentication;
+    private static String authorizationValue;
 
     static {
 
         businessApplIdsMap = new ExcelOperations("/xlsFilesToBeParsed/ApplicationNamesWithBA_ids.xlsx")
                 .getSpecificColumnsBySheetName("Worksheet", 3, 5, false);
         businessApplIdsMap.values().removeIf(Objects::isNull);
-        System.out.println("initialiting businessApplIdsMap...");
+        logger.info("initializing businessApplIdsMap...");
         darwinNamesMap = new ExcelOperations("/xlsFilesToBeParsed" +
                 "/DarwinNames_itcoNum_applicationNames.xlsx")
                 .getSpecificColumnsBySheetName("Application Role", 3, 2, true);
         darwinNamesMap.values().removeIf(Objects::isNull);
-        System.out.println("initialiting darwinNamesMap...");
+        logger.info("initializing darwinNamesMap...");
 
 
-        // transfering Map<String, List<String>> into Map<String, String> because businessApplIdsMap contains a
-        // List<String> with 1 elements only
-        appNameAndBaIsSingularMap = businessApplIdsMap.entrySet().stream().collect(Collectors.toMap(
-                entry -> entry.getValue().stream().findFirst().get(), Map.Entry::getKey));
-        System.out.println("initialiting appNameAndBaIsSingularMap...");
+        // transfering Map<String, Set<String>> into Map<String, String> because businessApplIdsMap contains a
+        // Set<String> with 1 elements only
+        appNameAndBaIsSingularMap = businessApplIdsMap.entrySet()
+                .stream().collect(Collectors.toMap(
+                        entry -> entry.getValue().stream().findFirst().get(), Map.Entry::getKey));
+        logger.info("initialiting appNameAndBaIsSingularMap...");
 
+        RestApiModel.getInstance();
     }
 
     public static void main(String[] args) {
         Instant start = Instant.now();
         settingProxy();
 
+        if (args.length == 0 || !args[0].endsWith(".txt") || Character.isDigit(args[0].charAt(0))) {
+            System.out.println("Please specify input file name! E.g.: businessActivityNames.txt");
+            System.exit(-1);
+        }
+
+        final String fileName = args[0];
+
         Set<ResultObject> allCapabilitiesSet = getCapabilityCatalogue();
 
         List<BusinessActivity> businessActivityList = new ArrayList<>();
 
-        // (1) FIXME: don't sue any filterig from PDF
         // (2) TODO: get the url to PROD of leanIX from Jürgen
 
-        //businessActivityList = filterBCCCatalogue(allCapabilitiesSet);
+        // uCMDB REst Api authentication
+        postRequestForAuthentication = RestApiModel.getPOSTRequest(RestApiModel.getJsonParamsForAuthentication(),
+                RestApiModel.getUrlForAuthentication(), RestApiModel.AUTHORIZATION_VALUE);
+        authorizationValue = postRequestForAuthentication.replace("\"", "").split(":")[1].trim();
 
+        businessActivityList = filterBCCCatalogue(allCapabilitiesSet, fileName);
 
+        /*
         allCapabilitiesSet.stream().forEach(resultObject -> {
             System.out.println(resultObject.getName() + " : " + resultObject.getLeanixId());
             businessActivityList.add(getBusinessActivityFromLeanixApi(
                     resultObject.getName(),
                     resultObject.getLeanixId()));
         });
+            */
 
-
+        System.out.println("ucmdb apiCallNum: " + RestApiModel.apiCallNum);
+        System.out.println("leanixApicalls: " + GraphqlApiLeanix.leanixApicall);
         ///////////////////// ExcelOperations ////////////////////////////
 
         ExcelOperations excelWriter = new ExcelOperations(GENERATTED_XLSX_FILE_NAME);
         excelWriter.generateDataFromObject(businessActivityList);
         excelWriter.generateFinalXslFile(true);
 
-        performanceWriter.executePerformanceTest(start, new Object() {
-        }.getClass().getEnclosingMethod().getName());
-        performanceWriter.closePerformanceWriter();
+        IOUtil.dumpContentToFile(AppDarwinName.getMismatchingApplicationNames(), OUTPUT_DIR +
+                "applicationNamesNotFoundInLeanix_xlsx_" + IOUtil.getTimeStamp() + ".txt");
+
+        IOUtil.dumpContentToFile(AppDarwinName.getMismatchingDarwinNames(), OUTPUT_DIR +
+                "applicationNamesMismatchedInUcmdb_" + IOUtil.getTimeStamp() + ".txt");
+
+        //performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+        //performanceWriter.closePerformanceWriter();
     }
 
-    private static List<BusinessActivity> filterBCCCatalogue(final Set<ResultObject> allCapabilitiesSet) {
+    private static List<BusinessActivity> filterBCCCatalogue(final Set<ResultObject> allCapabilitiesSet,
+                                                             String fileName) {
+
+        /*
         List<String> businessActivitiesList = Arrays.asList(
                 "PVG_TS-0001: Auftragsmanagement - MF - Bereitstellung - Neugeschäft PK",
                 "PVG_TS-0002: Auftragsmanagement - MF - Bereitstellung - Bestandsgeschäft PK",
                 "PVG_TS-0005: Auftragsmanagement - FN - Bereitstellung - Produktbereitstellung",
                 "PVG_TS-0006: Auftragsmanagement - FN - Bereitstellung - Produktwechsel"
         );
-        final List<BusinessActivity> businessActivityList = new ArrayList<>();
+        */
 
+
+        List<String> businessActivitiesList = IOUtil.getFileContentAsList("./" + fileName);
+
+        final List<BusinessActivity> businessActivityList = new ArrayList<>();
 
         businessActivitiesList.forEach((businessActivityName) -> {
             String prefixOnly = businessActivityName.substring(0, businessActivityName.indexOf(": "));
-            System.out.println("prefixOnly: " + prefixOnly);
+            //System.out.println("prefixOnly: " + prefixOnly);
 
             ResultObject foundCapability = allCapabilitiesSet.stream()
                     .filter(aCapability -> aCapability.getPrefixOnly().equalsIgnoreCase(prefixOnly.trim()))
@@ -131,8 +164,7 @@ public class LeanixApiPrototypeMain {
         Instant start = Instant.now();
         BusinessActivity businessActivity = queryDataAndInstantiateBusinessActivity(businessActivityName, leanixIdFromCache);
 
-        performanceWriter.executePerformanceTest(start, new Object() {
-        }.getClass().getEnclosingMethod().getName());
+        //performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
 
         return businessActivity;
     }
@@ -189,24 +221,47 @@ public class LeanixApiPrototypeMain {
                     // .getEnablingServiceVariantName());
                     AppDarwinName appDarwinName = new AppDarwinName(app.getName());
 
-                    List<String> possibleApplNamesList = darwinNamesMap.get(anEnablingServiceVariant.getEvsId());
+                    Set<String> possibleApplNamesList = darwinNamesMap.get(anEnablingServiceVariant.getEvsId());
                     appDarwinName.getDarwinNameList().addAll(possibleApplNamesList);
 
-                    //TODO: Rest API call to UCMDB and check 1:1 match with the Darwin name we get form xls file
-                    // Darwin name from xls file is: MSHOP(P) (APPL573735)
-                    // data from UCMDB is (???): MSHOP(P) (APPL573735)
-                    // if not a 1:1 match DarwinName " *** " UCMDBName (MSHOP(P) (APPL573735) *** MSHOP(P) (APPL111111))
+                    //TODO: biztos ez után kell az API-t hívni?
                     appDarwinName.setDarwinName(appDarwinName.replaceApplicationNameWithDarwinName());
+                    //TODO ide kell az api hívás
 
+                    apiCallForDarwinNames(appDarwinName);
 
                     anEnablingServiceVariant.getAppDarwinNameList().add(appDarwinName);
                 });
                 enablingService.getEnablingServiceVariantList().add(anEnablingServiceVariant);
             });
         }
-        performanceWriter.executePerformanceTest(start, new Object() {
-        }.getClass().getEnclosingMethod().getName());
+        //performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
         return businessActivity;
+    }
+
+    private static void apiCallForDarwinNames(final AppDarwinName appDarwinName) {
+        if (postRequestForAuthentication != null) {
+            String appName = appDarwinName.getDarwinName();
+
+            if (!appName.contains("<*")) {
+                String appShortName = appName.split(" \\(")[0]; //TODO: ezcsak APLL-nél működik
+
+                String jsonReplacedWithProperAppName = RestApiModel.getJsonParamsForApplicationIds().replace(
+                        "APPLICATION_NAME", appShortName);
+
+                String postRequestForApplication =
+                        RestApiModel.getPOSTRequest(jsonReplacedWithProperAppName,
+                                RestApiModel.getUrlForApplicationIds(),
+                                RestApiModel.AUTHORIZATION_VALUE + authorizationValue);
+
+                //GSON is preferred over Jackson, since it is more effective on parsing speed if the
+                // environment deals with lots of small JSON files. Jackson, however faster on big JSON files.
+                Gson gson = new Gson();
+                UcmdbDataContainer ucmdbData = gson.fromJson(postRequestForApplication, UcmdbDataContainer.class);
+
+                AppDarwinName.isDarwinFoundInUcmdb(appDarwinName, ucmdbData);
+            }
+        }
     }
 
     private static Set<ResultObject> getCapabilityCatalogue() {
@@ -224,7 +279,6 @@ public class LeanixApiPrototypeMain {
 
     private static Set<ResultObject> parseResultDataForSegment(final Map<String, Map<String, Object>> enablingServiceVariantQueryData,
                                                                String nameOfSegment) {
-        Instant start = Instant.now();
         Set<ResultObject> esvSet = new HashSet<>();
 
         Map<String, Object> factSheet = enablingServiceVariantQueryData.get(GRAPHQL_QUERY_FACT_SHEET);
@@ -244,7 +298,6 @@ public class LeanixApiPrototypeMain {
             esvSet.add(new ResultObject(name, displayName, leanixId, description));
         }
 
-        //performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
         return esvSet;
     }
 

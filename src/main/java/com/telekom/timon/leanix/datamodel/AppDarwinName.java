@@ -1,13 +1,26 @@
 package com.telekom.timon.leanix.datamodel;
 
+import com.telekom.timon.leanix.ucmdbdata.Cis;
+import com.telekom.timon.leanix.ucmdbdata.UcmdbDataContainer;
+import com.telekom.timon.leanix.util.Spelling;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
-public class AppDarwinName implements Comparable<AppDarwinName>{
+public class AppDarwinName implements Comparable<AppDarwinName> {
 
-    private String appName;
+    private static final Logger logger = LogManager.getLogger(AppDarwinName.class);
+
+
+    private final String appName;
     private String darwinName;
-    private List<String> darwinNameList;
+    private Set<String> darwinNameList;
+    private static List<String> mismatchingApplicationNames;
+    private static List<String> mismatchingDarwinNames;
     private String itcoNumber;
 
     public AppDarwinName(final String appName) {
@@ -23,11 +36,25 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
         return appName;
     }
 
-    public List<String> getDarwinNameList() {
-        if(null == darwinNameList){
-            darwinNameList = new ArrayList<>();
+    public Set<String> getDarwinNameList() {
+        if (null == darwinNameList) {
+            darwinNameList = new TreeSet<>();
         }
         return darwinNameList;
+    }
+
+    public static List<String> getMismatchingApplicationNames() {
+        if (mismatchingApplicationNames == null) {
+            mismatchingApplicationNames = new ArrayList<>();
+        }
+        return mismatchingApplicationNames;
+    }
+
+    public static List<String> getMismatchingDarwinNames() {
+        if (mismatchingDarwinNames == null) {
+            mismatchingDarwinNames = new ArrayList<>();
+        }
+        return mismatchingDarwinNames;
     }
 
     public String getDarwinName() {
@@ -47,7 +74,7 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
         // (1) direct match search
         for (final String aDarwinName : darwinNameList) {
             String anApplName = aDarwinName.substring(0, aDarwinName.indexOf(" | "));
-            String darwinName = aDarwinName.substring(aDarwinName.indexOf(" | ")+3, aDarwinName.length());
+            String darwinName = aDarwinName.substring(aDarwinName.indexOf(" | ")+3);
             if(getAppName().equalsIgnoreCase(anApplName)){
                 return darwinName;
             }
@@ -59,12 +86,18 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
         }
         for (final String aDarwinName : darwinNameList) {
             String anApplName = aDarwinName.substring(0, aDarwinName.indexOf(" | "));
-            String darwinName = aDarwinName.substring(aDarwinName.indexOf(" | ")+3, aDarwinName.length());
-            if(applicationName.equalsIgnoreCase(anApplName)){
+            String darwinName = aDarwinName.substring(aDarwinName.indexOf(" | ") + 3);
+            if (applicationName.equalsIgnoreCase(anApplName)) {
                 return darwinName;
-
             }
         }
+
+        logger.info("Could not replace Application name withDarwin Name (XLS) from: " + getAppName());
+
+        if (!getMismatchingApplicationNames().contains(getAppName())) {
+            getMismatchingApplicationNames().add(getAppName());
+        }
+
         return "<* " + getAppName() + " *>";
     }
 
@@ -83,5 +116,67 @@ public class AppDarwinName implements Comparable<AppDarwinName>{
         return sb.toString();
     }
 
+    public static boolean isDarwinFoundInUcmdb(final AppDarwinName appDarwinName, final UcmdbDataContainer ucmdbData) {
 
+        boolean isPartialMatchFound = false;
+
+        for (Cis ucmdbCis : ucmdbData.getCis()) {
+            String ucmdbName = ucmdbCis.getProperties().getName();
+
+            if (appDarwinName.getDarwinName().equalsIgnoreCase(ucmdbName)) {
+                //System.out.println(appDarwinName.getDarwinName() +" >>> "+ ucmdbName);
+                return true;
+            } else {
+                //return isDarwinFoundInUcmdbCheckedWithTypos(appDarwinName.getAppName(), ucmdbName);
+                //FIXME: check partial match in UCMDB
+                isPartialMatchFound = checkForPartialMatch(appDarwinName.getDarwinName(), ucmdbName);
+
+                if (isPartialMatchFound) {
+                    String result = appDarwinName.getDarwinName() + " >>> " + ucmdbName;
+
+                    if (!getMismatchingDarwinNames().contains(result)) {
+                        getMismatchingDarwinNames().add(result);
+                    }
+
+                    System.out.println("Partial match is not found for: " + appDarwinName.getDarwinName() + " >>> " + ucmdbName);
+                }
+            }
+        }
+
+        System.out.println(appDarwinName.getAppName() + " is not found in uCMDB");
+        return isPartialMatchFound;
+    }
+
+    //MSHOP (APPL12345)  -  MSHOP (APPL23451)
+    public static boolean checkForPartialMatch(final String appName, final String ucmdbName) {
+        if (appName.length() == ucmdbName.length()) {
+            for (int i = 0; i < appName.length(); i++) {
+                if (appName.charAt(i) != ucmdbName.charAt(i)) {
+                    //!! LOG both appName and ucmdbName
+                    //System.out.println("2."+appName + " != "+ ucmdbName);
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean isDarwinFoundInUcmdbCheckedWithTypos(final String appName, final String ucmdbName) {
+        Spelling.checkSpelling(appName);
+
+        String correctDarwinName = Spelling.correct(appName);
+        System.out.println("Corrected Darwin name: " + correctDarwinName);
+
+        if (!correctDarwinName.equals(ucmdbName)) {
+            System.out.println("Darwin name: " + "'" + appName + "'" +
+                    " and uCMDB name: " + "'" + ucmdbName + "'" + " are not matching!");
+            //TODO: create a log here.
+            return false;
+        } else {
+            //Lucene project: This method works fast, but is very complex to implement
+            return true;
+        }
+    }
 }

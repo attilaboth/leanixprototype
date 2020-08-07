@@ -127,7 +127,8 @@ public class ExcelOperations {
                         BUSINESS_FUNCTION_NAME));
 
                 //business function --> business_activity
-                relationshipsTabList.add(new RelationshipUCMDB(BUSINESS_FUNCTION_NAME, aBusinessActivity.getBusinessActivityName()));
+                relationshipsTabList.add(new RelationshipUCMDB(BUSINESS_FUNCTION_NAME,
+                        aBusinessActivity.getBusinessActivityName()));
 
                 // business_activity --> enabling_service
                 relationshipsTabList.add(new RelationshipUCMDB(aBusinessActivity.getBusinessActivityName(),
@@ -149,7 +150,8 @@ public class ExcelOperations {
                         business_applicationSheetTabSet.add(appDarwinName);
 
                         //relationships: enabling_service_variant --> business_application
-                        System.out.println(anEnablingServiceVariant.getEnablingServiceVariantName() + "--> " + appDarwinName.getDarwinName());
+                        //System.out.println(anEnablingServiceVariant.getEnablingServiceVariantName() + "--> " +
+                        // appDarwinName.getDarwinName());
 
                         relationshipsTabList.add(new RelationshipUCMDB(anEnablingServiceVariant.getEnablingServiceVariantName(),
                                 appDarwinName.getDarwinName()));
@@ -180,7 +182,7 @@ public class ExcelOperations {
             generateDataRow(relationshipsSheet, aRelationship.getUCMDBAsXlsData(), ++relationsRowNum);
         }
 
-        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+        //performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
     }
 
     public void generateFinalXslFile(final boolean openGeneratedFile) {
@@ -259,10 +261,10 @@ public class ExcelOperations {
     }
 
 
-    public Map<String, List<String>> getSpecificColumnsBySheetName(String sheetName, int columnNumberAsKey,
-                                                                   int columnNumbersAsValue, boolean isDarwinName) {
+    public Map<String, Set<String>> getSpecificColumnsBySheetName(String sheetName, int columnNumberAsKey,
+                                                                  int columnNumbersAsValue, boolean isDarwinName) {
         Instant start = Instant.now();
-        Map<String, List<String>> validColumns = new TreeMap<>();
+        Map<String, Set<String>> validColumns = new TreeMap<>();
 
         try (XSSFWorkbook workbook = new XSSFWorkbook(getClass().getResourceAsStream(xlsFileName))) {
 
@@ -287,7 +289,7 @@ public class ExcelOperations {
                     String capeName = getSpecificCellValue(row, columnNumbersAsValue, 1);
 
                     if (!key.isEmpty() && !value.isEmpty()) {
-                        List<String> keyList = new ArrayList<>();
+                        Set<String> keyList = new TreeSet<>();
 
                         if (validColumns.get(key) != null) {
                             keyList = validColumns.get(key);
@@ -295,6 +297,7 @@ public class ExcelOperations {
 
                         if (isDarwinName && !capeName.isEmpty()) {
                             keyList.add(capeName + " | " + value);
+                            //System.out.println(capeName + " | " + value);
                         } else {
                             keyList.add(value);
                         }
@@ -309,7 +312,7 @@ public class ExcelOperations {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
+        //performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
 
         return validColumns;
     }
@@ -395,7 +398,7 @@ public class ExcelOperations {
                                                                       List<Integer> columnNumbers) {
 
         List<ArrayList<String>> sheetContent = excelFile.get(sheetNumber - 1);
-        Map<String, ArrayList<String>> validColumns = new TreeMap<>();
+        Map<String, ArrayList<String>> validColumns = new HashMap<>();
 
         for (ArrayList<String> row : sheetContent) {
             ArrayList<String> validRow = new ArrayList();

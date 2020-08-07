@@ -1,6 +1,5 @@
 package com.telekom.timon.leanix.datamodel;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,7 @@ class AppDarwinNameTest {
     void replaceApplicationNameWithDarwinNameTest3() {
         AppDarwinName testAppDarwinName = new AppDarwinName("T-VPP Core");
         testAppDarwinName.getDarwinNameList().addAll(Arrays.asList(
-                "Sign | SIGN(P) (APPL149831)","T-VPP | T-VPP(P) (APPL149713)", "mShop | mShop(P) (APPL573735)", "CCOS | CCOS(P) (APPL150116)"));
+                "Sign | SIGN(P) (APPL149831)", "T-VPP | T-VPP(P) (APPL149713)", "mShop | mShop(P) (APPL573735)", "CCOS | CCOS(P) (APPL150116)"));
 
         String foundDarwinName = testAppDarwinName.replaceApplicationNameWithDarwinName();
 
@@ -50,8 +49,16 @@ class AppDarwinNameTest {
     }
 
 
-    @AfterEach
-    void tearDown() {
+    @Test
+    void checkForPartialMatch() {
+        final boolean fullMatchFound = AppDarwinName.checkForPartialMatch("MSHOP (APPL12345)", "MSHOP (APPL12345)");
+        Assertions.assertTrue(fullMatchFound);
+
+        final boolean partialMatchFound = AppDarwinName.checkForPartialMatch("MSHOP (APPL12345)", "MSHOP (APPL23451)");
+        Assertions.assertFalse(partialMatchFound);
+
+        final boolean noMatchFound = AppDarwinName.checkForPartialMatch("MSHOP (APPL12345)", "MSHOP CITY (APPL23451)");
+        Assertions.assertFalse(noMatchFound);
 
     }
 }

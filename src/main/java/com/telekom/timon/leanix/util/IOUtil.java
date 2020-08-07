@@ -4,7 +4,10 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
@@ -146,6 +149,13 @@ public class IOUtil {
 
 		//System.out.println(fileOnResources + " : \n" +contentAsStrBuffer.toString());
 		return contentAsStrBuffer.toString();
+	}
+
+	public static String getTimeStamp() {
+		Timestamp ts = new Timestamp(new Date().getTime());
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH-mm-ss");
+
+		return formatter.format(ts);
 	}
 
 }

@@ -6,7 +6,8 @@ public class LeanixPototypeConstants {
     public static final String DARWIN_NAMES_MAPPING_TABLE_XLSX = "/xlsFilesToBeParsed/DarwinNames_itcoNum_applicationNames.xlsx";
     public static final String GENERATED_BBC_EXCEL_XLSX = "src/main/resources/generatedFiles/BCC.xls";
 
-    public static final String OUTPUT_DIR = "C://DEV//";
+    //public static final String OUTPUT_DIR = "C://DEV//";
+    public static final String OUTPUT_DIR = "./";
     public static final String GENERATTED_XLSX_FILE_NAME = OUTPUT_DIR + "bcc_generated.xlsx";
     public static final String GENERATTED_PERFORMANCE_RESULT = OUTPUT_DIR + "methodPerformances.txt";
     public static final String GRAPHQL_QUERY_EDGES = "edges";
