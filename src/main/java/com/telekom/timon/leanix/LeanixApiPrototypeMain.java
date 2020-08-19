@@ -8,10 +8,17 @@ import com.telekom.timon.leanix.restapi.RestApiModel;
 import com.telekom.timon.leanix.ucmdbdata.UcmdbDataContainer;
 import com.telekom.timon.leanix.util.IOUtil;
 import com.telekom.timon.leanix.util.PropertiesUtil;
+import net.leanix.api.common.auth.Authentication;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -62,6 +69,10 @@ public class LeanixApiPrototypeMain {
         Instant start = Instant.now();
         settingProxy();
 
+
+        String responsetest = testLeanixApiCall();
+        System.out.println(responsetest);
+
         if (args.length == 0 || !args[0].endsWith(".txt") || Character.isDigit(args[0].charAt(0))) {
             System.out.println("Please specify input file name! E.g.: businessActivityNames.txt");
             System.exit(-1);
@@ -107,6 +118,48 @@ public class LeanixApiPrototypeMain {
 
         //performanceWriter.executePerformanceTest(start, new Object() {}.getClass().getEnclosingMethod().getName());
         //performanceWriter.closePerformanceWriter();
+    }
+
+    private static String testLeanixApiCall() {
+        StringBuilder response = null;
+        BufferedReader input = null;
+
+        try {
+
+            URL url = new URL("https://app.leanix.net/services/mtm/v1/oauth2/token");
+            HttpURLConnection postConnection = (HttpURLConnection) url.openConnection();
+            postConnection.setRequestMethod("POST");
+            postConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            postConnection.setDoOutput(true);
+            postConnection.setRequestProperty("Authorization", "Basic kmebL5TSQ54UrWrXZqZNbzPODezNRjdaSz7L6rGS");
+
+            OutputStream outputStream = postConnection.getOutputStream();
+            //outputStream.write(jsonParam.getBytes());
+
+            int responseCode = postConnection.getResponseCode();
+            //System.out.println("POST Response Code :  " + responseCode);
+            //System.out.println("POST Response Message : " + postConnection.getResponseMessage());
+
+            if (responseCode == HttpURLConnection.HTTP_OK) { //success
+                input = new BufferedReader(new InputStreamReader(postConnection.getInputStream()));
+                String inputLine;
+                response = new StringBuilder();
+
+                while ((inputLine = input.readLine()) != null) {
+                    response.append(inputLine);
+                }
+
+                //System.out.println(response.toString());
+
+            } else {
+                throw new RuntimeException("Failed : HTTP error code : " + postConnection.getResponseCode());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return response.toString();
+
     }
 
     private static List<BusinessActivity> filterBCCCatalogue(final Set<ResultObject> allCapabilitiesSet,

@@ -5,6 +5,7 @@ import net.leanix.api.GraphqlApi;
 import net.leanix.api.common.ApiClient;
 import net.leanix.api.common.ApiClientBuilder;
 import net.leanix.api.common.ApiException;
+import net.leanix.api.common.auth.Authentication;
 import net.leanix.api.models.GraphQLRequest;
 import net.leanix.api.models.GraphQLResult;
 
@@ -19,6 +20,12 @@ public class GraphqlApiLeanix {
     private final ApiClient apiClient;
     public GraphQLRequest graphQLRequest;
 
+    public Map<String, Authentication> getAuthentications() {
+        return authentications;
+    }
+
+    private Map<String, Authentication> authentications;
+
     public GraphqlApiLeanix() {
         Properties apiSettings = new PropertiesUtil().getProperties("graphqlApiSettings.properties");
 
@@ -28,6 +35,9 @@ public class GraphqlApiLeanix {
                 .withTokenProviderHost(apiSettings.getProperty("tokenProvider"))
                 .withDebugging(Boolean.FALSE)
                 .build();
+
+        authentications = apiClient.getAuthentications();
+
     }
 
     public GraphqlApi getGraphqlApi() {
